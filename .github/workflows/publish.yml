@@ -9,8 +9,6 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
-  release:
-    types: [ published ]
 
 env:
   ADMIN_APP_VERSION: '2.4.51'
@@ -30,6 +28,7 @@ jobs:
         shell: pwsh
     outputs:
       hashes: ${{ steps.hashes.outputs.hashes }}
+      release: ${{ steps.release.outputs.release-name }}
 
     steps:
     - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
@@ -39,7 +38,7 @@ jobs:
       with:
         dotnet-version: 6.0.x
 
-    - name: Publish
+    - name: Publish .NET Assemblies
       run: |
         ./build.ps1 -Command BuildAndPublish `
             -Configuration Release `
@@ -54,7 +53,7 @@ jobs:
     # - name: Populate Google Analytics ID
     #   run: .\build.ps1 -Command PopulateGoogleAnalyticsAppSettings -GoogleAnalyticsMeasurementId ${{env.GA_MEASUREMENT_ID}}
 
-    - name: Pack
+    - name: Create NuGet Packages
       if: success()
       run: |
         ./build.ps1 -Command Package -Version ${{ env.ADMIN_APP_VERSION }} `
@@ -70,7 +69,7 @@ jobs:
       run:
         echo "::set-output name=hashes::$(sha256sum *.nupkg | base64 -w0)"
 
-    - name: Upload Package
+    - name: Upload Package as Artifact
       if: success()
       uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
       with:
@@ -78,6 +77,33 @@ jobs:
         path: ./*.nupkg
         if-no-files-found: error
         retention-days: 30
+
+    - name: Create Release for Admin App
+      id: release
+      run: |
+        $release = "admin-app-${{ github.run_id }}"
+        $repo = "${{ github.repository }}"
+        $token = "${{ secrets.GITHUB_TOKEN }}"
+
+        $url = "https://api.github.com/repos/$repo/releases"
+
+        $gh_headers = @{
+            "Accept"        = "application/vnd.github+json"
+            "Authorization" = "Bearer $token"
+        }
+
+        $body = @{
+            "tag_name" = "$release"
+            "target_commitish" = "main"
+            "name" = "$release"
+            "body" = "",
+            "draft" = $True
+            "prerelease" = $False
+            "generate_release_notes" = $False
+        } | ConvertTo-Json
+
+        Invoke-RestMethod -Method POST -Uri $url -Body $body -Headers @gh_headers
+        "::set-output name=release-name::$release" | Write-Output
 
   sbom-create:
     runs-on: ubuntu-latest
