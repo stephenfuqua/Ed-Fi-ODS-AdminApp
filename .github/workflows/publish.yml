@@ -124,13 +124,16 @@ jobs:
 
       # TODO: separate Admin API and Admin App
       - name: Generate Software Bill of Materials (SBOM)
-        shell: bash
         run: |
-          curl -Lo $RUNNER_TEMP/sbom-tool https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64 --silent
-          chmod +x $RUNNER_TEMP/sbom-tool
-          find ./*.nupkg  -printf "%f\n" > buildfilelist.txt
-          mkdir manifest
-          $RUNNER_TEMP/sbom-tool generate \
+          $url = "https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64"
+          $out = "$RUNNER_TEMP/sbom-tool"
+          Invoke-RestMethod -Uri $url -OutFile $out
+          chmod +x $out
+
+          Get-ChildItem -Include *.nupkg -Recurse | ForEach-Object { $_.FullName } > buildfilelist.txt
+          New-Item -Path manifest -Type Directory
+
+          &$out generate \
               -b ./ \
               -bl ./buildfilelist.txt \
               -bc ./Application/ \
