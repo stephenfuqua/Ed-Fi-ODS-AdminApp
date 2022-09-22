@@ -216,7 +216,7 @@ jobs:
     with:
       base64-subjects: "${{ needs.pack.outputs.hashes }}"
       # Set a custom name for the provenance attestation.
-      attestation-name: "${{ env.PROVENANCE_FILE }}"
+      attestation-name: ${{ env.PROVENANCE_FILE }}
       # Upload provenance to a new release, if there is a new tag
       upload-assets: False
 
