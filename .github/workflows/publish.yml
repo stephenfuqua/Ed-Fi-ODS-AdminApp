@@ -102,7 +102,7 @@ jobs:
             "generate_release_notes" = $False
         } | ConvertTo-Json
 
-        Invoke-RestMethod -Method POST -Uri $url -Body $body -Headers @gh_headers
+        Invoke-RestMethod -Method POST -Uri $url -Body $body -Headers $gh_headers
         "::set-output name=release-name::$release" | Write-Output
 
   sbom-create:
@@ -162,7 +162,7 @@ jobs:
 
   sbom-release:
     runs-on: ubuntu-latest
-    needs: [sbom-create]
+    needs: sbom-create
     permissions:
       actions: read
       contents: write
@@ -220,7 +220,7 @@ jobs:
 
   provenance-release:
     runs-on: ubuntu-latest
-    needs: [sbom-create]
+    needs: provenance
     permissions:
       actions: read
       contents: write
