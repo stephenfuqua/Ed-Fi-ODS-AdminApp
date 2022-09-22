@@ -222,7 +222,9 @@ jobs:
 
   provenance-release:
     runs-on: ubuntu-latest
-    needs: provenance
+    needs:
+      - provenance
+      - pack
     permissions:
       actions: read
       contents: write
