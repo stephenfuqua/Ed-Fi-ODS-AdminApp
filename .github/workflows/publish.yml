@@ -128,7 +128,7 @@ jobs:
         shell: pwsh
         run: |
           $url = "https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64"
-          $out = "$RUNNER_TEMP/sbom-tool"
+          $out = "$($env:RUNNER_TEMP)/sbom-tool"
           Invoke-RestMethod -Uri $url -OutFile $out
           chmod +x $out
 
