@@ -135,14 +135,14 @@ jobs:
           Get-ChildItem -Include *.nupkg -Recurse | ForEach-Object { $_.FullName } > buildfilelist.txt
           New-Item -Path manifest -Type Directory
 
-          &$out generate \
-              -b ./ \
-              -bl ./buildfilelist.txt \
-              -bc ./Application/ \
-              -pn AdminApp \
-              -pv ${{ env.ADMIN_APP_VERSION }} \
-              -nsb https://ed-fi.org \
-              -m manifest \
+          &$out generate `
+              -b ./ `
+              -bl ./buildfilelist.txt `
+              -bc ./Application/ `
+              -pn AdminApp `
+              -pv ${{ env.ADMIN_APP_VERSION }} `
+              -nsb https://ed-fi.org `
+              -m manifest `
               -ps "Ed-Fi Alliance"
 
       - name: Upload SBOM
