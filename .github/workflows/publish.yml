@@ -116,7 +116,7 @@ jobs:
       id-token: write
       contents: write
     outputs:
-      sbom-hash: ${{ steps.sbom-hash.outputs.api-sbom-hash }}
+      sbom-hash: ${{ steps.sbom-hash.outputs.api-sbom-hash-code }}
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
@@ -161,7 +161,7 @@ jobs:
         run: |
           # sha256sum returns "<hashcode>  <name of file". Split that and return only the <hashcode>.
           sbom_hash=$(sha256sum ./manifest/${{ env.MANIFEST_FILE }} | awk '{split($0,a); print a[1]}')
-          echo "::set-output name=api-sbom-hash::$sbom_hash"
+          echo "::set-output name=api-sbom-hash-code::$sbom_hash"
 
   sbom-release-API:
     runs-on: ubuntu-latest
@@ -175,7 +175,7 @@ jobs:
         with:
           name: API-sbom
           path: ${{ env.MANIFEST_FILE }}
-          sha256: "${{ needs.sbom-create.outputs.api-sbom-hash }}"
+          sha256: "${{ needs.sbom-create.outputs.api-sbom-hash-code }}"
 
       - name: Attach to release
         shell: pwsh
@@ -233,7 +233,7 @@ jobs:
         id: split-hashcode
         run: |
           # sha256sum returns "<hashcode>  <name of file". Split that and return only the <hashcode>.
-          set provenance_hash=$(echo "${{ needs.pack.outputs.hashes-api }}" | base64 -d | awk '{split($0,a); print a[1]}')
+          set provenance_hash=$(echo "${{ needs.pack.outputs.api-hash-code }}" | base64 -d | awk '{split($0,a); print a[1]}')
           echo "::set-output name=provenance_hash::$provenance_hash"
 
       - name: Download the Provenance
