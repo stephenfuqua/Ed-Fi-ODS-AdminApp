@@ -68,7 +68,9 @@ jobs:
       id: hashes
       shell: bash
       run:
-        echo "::set-output name=hashes::$(sha256sum *.nupkg | base64 -w0)"
+        echo "::set-output name=hashes-api::$(sha256sum  EdFi.Suite3.ODS.Admin.Api.*.nupkg | base64 -w0)"
+        echo "::set-output name=hashes-db::$(sha256sum  EdFi.Suite3.ODS.Admin.Database.*.nupkg | base64 -w0)"
+        echo "::set-output name=hashes-web::$(sha256sum  EdFi.Suite3.ODS.Admin.Web.*.nupkg | base64 -w0)"
 
     - name: Upload Package as Artifact
       if: success()
@@ -123,8 +125,7 @@ jobs:
         with:
           name: NuGetPackages
 
-      # TODO: separate Admin API and Admin App
-      - name: Generate Software Bill of Materials (SBOM)
+      - name: Generate Software Bill of Materials (SBOM) - API
         shell: pwsh
         run: |
           $url = "https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64"
@@ -132,24 +133,24 @@ jobs:
           Invoke-RestMethod -Uri $url -OutFile $out
           chmod +x $out
 
-          Get-ChildItem -Include *.nupkg -Recurse | ForEach-Object { $_.FullName } > buildfilelist.txt
+          Get-ChildItem -Include EdFi.Suite3.ODS.Admin.Api.*.nupkg -Recurse | ForEach-Object { $_.FullName } > buildfilelist.txt
           New-Item -Path manifest -Type Directory
 
           &$out generate `
               -b ./ `
               -bl ./buildfilelist.txt `
-              -bc ./Application/ `
-              -pn AdminApp `
+              -bc ./Application/EdFi.Ods.Admin.Api `
+              -pn AdminApi `
               -pv ${{ env.ADMIN_APP_VERSION }} `
               -nsb https://ed-fi.org `
               -m manifest `
               -ps "Ed-Fi Alliance"
 
-      - name: Upload SBOM
+      - name: Upload SBOM - API
         if: success()
         uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
         with:
-          name: ${{ env.SBOM_NAME }}
+          name: ${{ env.SBOM_NAME }}-API
           path: ./manifest
           if-no-files-found: error
           retention-days: 30
@@ -160,7 +161,7 @@ jobs:
         run: |
           # sha256sum returns "<hashcode>  <name of file". Split that and return only the <hashcode>.
           sbom_hash=$(sha256sum ./manifest/${{ env.MANIFEST_FILE }} | awk '{split($0,a); print a[1]}')
-          echo "::set-output name=sbom-hash::$sbom_hash"
+          echo "::set-output name=sbom-hash-api::$sbom_hash"
 
   sbom-release:
     runs-on: ubuntu-latest
@@ -168,14 +169,13 @@ jobs:
     permissions:
       actions: read
       contents: write
-    if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - name: Download the SBOM
+      - name: Download the SBOM - API
         uses: slsa-framework/slsa-github-generator/.github/actions/secure-download-artifact@1d646d70aeba1516af69fb0ef48206580122449b
         with:
-          name: ${{ env.SBOM_NAME }}
+          name: ${{ env.SBOM_NAME }}-API
           path: ${{ env.MANIFEST_FILE }}
-          sha256: "${{ needs.sbom-create.outputs.sbom-hash }}"
+          sha256: "${{ needs.sbom-create.outputs.sbom-hash-api }}"
 
       - name: Attach to release
         shell: pwsh
@@ -184,7 +184,7 @@ jobs:
             $repo = "${{ github.repository }}"
             $token = "${{ secrets.GITHUB_TOKEN }}"
             $file = "${{ env.MANIFEST_FILE }}"
-            $uploadName = "SBOM-manifest.zip"
+            $uploadName = "API-SBOM-manifest.zip"
 
             $url = "https://api.github.com/repos/$repo/releases/tags/$release"
 
@@ -206,7 +206,7 @@ jobs:
                 -Headers $gh_headers `
                 -InFile $uploadName
 
-  provenance:
+  provenance-API:
     needs: pack
     permissions:
       actions: read
@@ -214,8 +214,8 @@ jobs:
       contents: write
     uses: ed-fi-alliance-oss/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
     with:
-      base64-subjects: "${{ needs.pack.outputs.hashes }}"
-      attestation-name: multiple.intoto.jsonl
+      base64-subjects: "${{ needs.pack.outputs.hashes-api }}"
+      attestation-name: API.intoto.json
       # We do not yet have a release at the point when we run this, therefore
       # there is no release to which an asset can be uploaded.
       upload-assets: False
@@ -233,14 +233,14 @@ jobs:
         id: split-hashcode
         run: |
           # sha256sum returns "<hashcode>  <name of file". Split that and return only the <hashcode>.
-          set provenance_hash=$(echo "${{ needs.pack.outputs.hashes }}" | awk '{split($0,a); print a[1]}')
+          set provenance_hash=$(echo "${{ needs.pack.outputs.hashes-api }}" | base64 -d | awk '{split($0,a); print a[1]}')
           echo "::set-output name=provenance_hash::$provenance_hash"
 
       - name: Download the Provenance
         uses: slsa-framework/slsa-github-generator/.github/actions/secure-download-artifact@1d646d70aeba1516af69fb0ef48206580122449b
         with:
-          name: "${{ env.PROVENANCE_FILE }}"
-          path: "${{ env.PROVENANCE_FILE }}"
+          name: API.intoto.json
+          path: API.intoto.json
           sha256: "${{ steps.split-hashcode.outputs.provenance_hash }}"
 
       - name: Attach to release
@@ -249,8 +249,8 @@ jobs:
             $release = "${{ needs.pack.outputs.release-name }}"
             $repo = "${{ github.repository }}"
             $token = "${{ secrets.GITHUB_TOKEN }}"
-            $file = "${{ env.PROVENANCE_FILE }}"
-            $uploadName = "provenance.zip"
+            $file = API.intoto.json
+            $uploadName = "API-provenance.zip"
 
             $url = "https://api.github.com/repos/$repo/releases/tags/$release"
 
