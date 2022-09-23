@@ -17,7 +17,6 @@ env:
   ARTIFACTS_API_KEY: ${{ secrets.AZURE_ARTIFACTS_PERSONAL_ACCESS_TOKEN }}
   ARTIFACTS_FEED_URL: ${{ secrets.AZURE_ARTIFACTS_FEED_URL }}
   VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials": [{"endpoint": "${{ secrets.AZURE_ARTIFACTS_FEED_URL }}","password": "${{ secrets.AZURE_ARTIFACTS_PERSONAL_ACCESS_TOKEN }}"}]}'
-  SBOM_NAME: "Admin-App-SBOM"
   MANIFEST_FILE: "_manifest/spdx_2.2/manifest.spdx.json"
 
 jobs:
@@ -27,7 +26,9 @@ jobs:
       run:
         shell: pwsh
     outputs:
-      hashes: ${{ steps.hashes.outputs.hashes }}
+      api-hash-code: ${{ steps.hashes.outputs.api-hash-code }}
+      db-hash-code: ${{ steps.hashes.outputs.db-hash-code }}
+      web-hash-code: ${{ steps.hashes.outputs.web-hash-code }}
       release-name: ${{ steps.release.outputs.api-release-name }}
 
     steps:
@@ -67,9 +68,9 @@ jobs:
       id: hashes
       shell: bash
       run:
-        echo "::set-output name=hashes-api::$(sha256sum  EdFi.Suite3.ODS.Admin.Api.*.nupkg | base64 -w0)"
-        echo "::set-output name=hashes-db::$(sha256sum  EdFi.Suite3.ODS.Admin.Database.*.nupkg | base64 -w0)"
-        echo "::set-output name=hashes-web::$(sha256sum  EdFi.Suite3.ODS.Admin.Web.*.nupkg | base64 -w0)"
+        echo "::set-output name=api-hash-code::$(sha256sum  EdFi.Suite3.ODS.Admin.Api.*.nupkg | base64 -w0)"
+        echo "::set-output name=db-hash-code::$(sha256sum  EdFi.Suite3.ODS.Admin.Database.*.nupkg | base64 -w0)"
+        echo "::set-output name=web-hash-code::$(sha256sum  EdFi.Suite3.ODS.Admin.Web.*.nupkg | base64 -w0)"
 
     - name: Upload Package as Artifact
       if: success()
@@ -149,7 +150,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
         with:
-          name: ${{ env.SBOM_NAME }}-API
+          name: API-sbom
           path: ./manifest
           if-no-files-found: error
           retention-days: 30
@@ -172,7 +173,7 @@ jobs:
       - name: Download the SBOM - API
         uses: slsa-framework/slsa-github-generator/.github/actions/secure-download-artifact@1d646d70aeba1516af69fb0ef48206580122449b
         with:
-          name: ${{ env.SBOM_NAME }}-API
+          name: API-sbom
           path: ${{ env.MANIFEST_FILE }}
           sha256: "${{ needs.sbom-create.outputs.api-sbom-hash }}"
 
@@ -213,7 +214,7 @@ jobs:
       contents: write
     uses: ed-fi-alliance-oss/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
     with:
-      base64-subjects: "${{ needs.pack.outputs.hashes-api }}"
+      base64-subjects: "${{ needs.pack.outputs.api-hash }}"
       attestation-name: API.intoto.jsonl
       # We do not yet have a release at the point when we run this, therefore
       # there is no release to which an asset can be uploaded.
