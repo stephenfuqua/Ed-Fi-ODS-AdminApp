@@ -19,7 +19,6 @@ env:
   VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials": [{"endpoint": "${{ secrets.AZURE_ARTIFACTS_FEED_URL }}","password": "${{ secrets.AZURE_ARTIFACTS_PERSONAL_ACCESS_TOKEN }}"}]}'
   SBOM_NAME: "Admin-App-SBOM"
   MANIFEST_FILE: "_manifest/spdx_2.2/manifest.spdx.json"
-  PROVENANCE_FILE: "multiple.intoto.jsonl"
 
 jobs:
   pack:
@@ -215,7 +214,7 @@ jobs:
     uses: ed-fi-alliance-oss/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
     with:
       base64-subjects: "${{ needs.pack.outputs.hashes-api }}"
-      attestation-name: API.intoto.json
+      attestation-name: API.intoto.jsonl
       # We do not yet have a release at the point when we run this, therefore
       # there is no release to which an asset can be uploaded.
       upload-assets: False
@@ -239,8 +238,8 @@ jobs:
       - name: Download the Provenance
         uses: slsa-framework/slsa-github-generator/.github/actions/secure-download-artifact@1d646d70aeba1516af69fb0ef48206580122449b
         with:
-          name: API.intoto.json
-          path: API.intoto.json
+          name: API.intoto.jsonl
+          path: API.intoto.jsonl
           sha256: "${{ steps.split-hashcode.outputs.provenance_hash }}"
 
       - name: Attach to release
@@ -249,7 +248,7 @@ jobs:
             $release = "${{ needs.pack.outputs.api-release-name }}"
             $repo = "${{ github.repository }}"
             $token = "${{ secrets.GITHUB_TOKEN }}"
-            $file = API.intoto.json
+            $file = API.intoto.jsonl
             $uploadName = "API-provenance.zip"
 
             $url = "https://api.github.com/repos/$repo/releases/tags/$release"
