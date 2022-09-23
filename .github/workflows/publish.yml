@@ -29,7 +29,7 @@ jobs:
         shell: pwsh
     outputs:
       hashes: ${{ steps.hashes.outputs.hashes }}
-      release-name: ${{ steps.release.outputs.release-name }}
+      release-name: ${{ steps.release.outputs.api-release-name }}
 
     steps:
     - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
@@ -81,10 +81,10 @@ jobs:
         if-no-files-found: error
         retention-days: 30
 
-    - name: Create Release for Admin App
+    - name: Create Release for Admin API
       id: release
       run: |
-        $release = "admin-app-${{ github.run_id }}"
+        $release = "admin-api-${{ github.run_id }}"
         $repo = "${{ github.repository }}"
         $token = "${{ secrets.GITHUB_TOKEN }}"
 
@@ -106,7 +106,7 @@ jobs:
         } | ConvertTo-Json
 
         Invoke-RestMethod -Method POST -Uri $url -Body $body -Headers $gh_headers
-        "::set-output name=release-name::$release" | Write-Output
+        "::set-output name=api-release-name::$release" | Write-Output
 
   sbom-create:
     runs-on: ubuntu-latest
@@ -163,7 +163,7 @@ jobs:
           sbom_hash=$(sha256sum ./manifest/${{ env.MANIFEST_FILE }} | awk '{split($0,a); print a[1]}')
           echo "::set-output name=sbom-hash-api::$sbom_hash"
 
-  sbom-release:
+  sbom-release-API:
     runs-on: ubuntu-latest
     needs: sbom-create
     permissions:
@@ -180,7 +180,7 @@ jobs:
       - name: Attach to release
         shell: pwsh
         run: |
-            $release = "${{ needs.pack.outputs.release-name }}"
+            $release = "${{ needs.pack.outputs.api-release-name }}"
             $repo = "${{ github.repository }}"
             $token = "${{ secrets.GITHUB_TOKEN }}"
             $file = "${{ env.MANIFEST_FILE }}"
@@ -220,10 +220,10 @@ jobs:
       # there is no release to which an asset can be uploaded.
       upload-assets: False
 
-  provenance-release:
+  provenance-release-API:
     runs-on: ubuntu-latest
     needs:
-      - provenance
+      - provenance-API
       - pack
     permissions:
       actions: read
@@ -246,7 +246,7 @@ jobs:
       - name: Attach to release
         shell: pwsh
         run: |
-            $release = "${{ needs.pack.outputs.release-name }}"
+            $release = "${{ needs.pack.outputs.api-release-name }}"
             $repo = "${{ github.repository }}"
             $token = "${{ secrets.GITHUB_TOKEN }}"
             $file = API.intoto.json
