@@ -233,15 +233,15 @@ jobs:
         id: split-hashcode
         run: |
           # sha256sum returns "<hashcode>  <name of file". Split that and return only the <hashcode>.
-          provenance_hash=$("${{ needs.pack.outputs.hashes }}" | awk '{split($0,a); print a[1]}')
-          echo "::set-output name=provenance-hash::$provenance_hash"
+          provenance_hash=$(echo "${{ needs.pack.outputs.hashes }}" | awk '{split($0,a); print a[1]}')
+          echo "::set-output name=::$provenance_hash"
 
       - name: Download the Provenance
         uses: slsa-framework/slsa-github-generator/.github/actions/secure-download-artifact@1d646d70aeba1516af69fb0ef48206580122449b
         with:
           name: "${{ env.PROVENANCE_FILE }}"
           path: "${{ env.PROVENANCE_FILE }}"
-          sha256: "${{ steps.split-hashcode.outputs.provenance-hash }}"
+          sha256: "${{ steps.split-hashcode.outputs.provenance_hash }}"
 
       - name: Attach to release
         shell: pwsh
