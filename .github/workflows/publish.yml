@@ -233,7 +233,7 @@ jobs:
         id: split-hashcode
         run: |
           # sha256sum returns "<hashcode>  <name of file". Split that and return only the <hashcode>.
-          provenance_hash=$(echo "${{ needs.pack.outputs.hashes }}" | awk '{split($0,a); print a[1]}')
+          set provenance_hash=$(echo "${{ needs.pack.outputs.hashes }}" | awk '{split($0,a); print a[1]}')
           echo "::set-output name=provenance_hash::$provenance_hash"
 
       - name: Download the Provenance
