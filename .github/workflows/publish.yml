@@ -215,9 +215,9 @@ jobs:
     uses: ed-fi-alliance-oss/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
     with:
       base64-subjects: "${{ needs.pack.outputs.hashes }}"
-      # Set a custom name for the provenance attestation.
       attestation-name: multiple.intoto.jsonl
-      # Upload provenance to a new release, if there is a new tag
+      # We do not yet have a release at the point when we run this, therefore
+      # there is no release to which an asset can be uploaded.
       upload-assets: False
 
   provenance-release:
@@ -229,12 +229,19 @@ jobs:
       actions: read
       contents: write
     steps:
+      - name: Split the hashcode
+        id: split-hashcode
+        run: |
+          # sha256sum returns "<hashcode>  <name of file". Split that and return only the <hashcode>.
+          provenance_hash=$("${{ needs.pack.outputs.hashes }}" | awk '{split($0,a); print a[1]}')
+          echo "::set-output name=provenance-hash::$provenance_hash"
+
       - name: Download the Provenance
         uses: slsa-framework/slsa-github-generator/.github/actions/secure-download-artifact@1d646d70aeba1516af69fb0ef48206580122449b
         with:
           name: "${{ env.PROVENANCE_FILE }}"
           path: "${{ env.PROVENANCE_FILE }}"
-          sha256: "${{ needs.pack.outputs.hashes }}"
+          sha256: "${{ steps.split-hashcode.outputs.provenance-hash }}"
 
       - name: Attach to release
         shell: pwsh
