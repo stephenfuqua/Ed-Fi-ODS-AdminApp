@@ -10,10 +10,10 @@ on:
     branches:
       - main
     paths:
-      - '**/*.ps1'
-      - '**/*.psm1'
-      - '**/*.cs'
-      - '**/*.csproj'
+      - "**/*.ps1"
+      - "**/*.psm1"
+      - "**/*.cs"
+      - "**/*.csproj"
   workflow_dispatch:
 
 jobs:
