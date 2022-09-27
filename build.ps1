@@ -236,7 +236,7 @@ function RunTests {
 
     $testAssemblies | ForEach-Object {
         Write-Host "Executing: dotnet test $($_)"
-        Invoke-Execute { dotnet test $_ }
+        Invoke-Execute { dotnet test $_ /logger:"trx;LogFileName=unit-tests.trx"}
     }
 }
 
