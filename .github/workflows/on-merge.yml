@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+# Licensed to the Ed-Fi Alliance under one or more agreements.
+# The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
+# See the LICENSE and NOTICES files in the project root for more information.
+
+name: On Merge to Main
+on:
+  push:
+    branches:
+      - main
+
+env:
+  ADMIN_APP_VERSION: adminapp-web-${{ github.sha }}
+  ADMIN_DB_VERSION: adminapp-db-${{ github.sha }}
+  ADMIN_API_VERSION: admin-api-${{ github.sha }}
+  API_URL: https://api.github.com/repos/${{ github.repository }}
+
+jobs:
+  create-pre-releases:
+    name: Create Pre-Releases
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Draft Admin App Web Release
+        run: |
+          curl \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            ${{ env.API_URL }}/releases \
+            -d '{"tag_name":"${{ env.ADMIN_APP_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_APP_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
+
+      - name: Create Draft Admin App Database Release
+        run: |
+          curl \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            ${{ env.API_URL }}/releases \
+            -d '{"tag_name":"${{ env.ADMIN_DB_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_DB_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
+
+      - name: Create Draft Admin API Release
+        run: |
+          curl \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            ${{ env.API_URL }}/releases \
+            -d '{"tag_name":"${{ env.ADMIN_API_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_API_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
