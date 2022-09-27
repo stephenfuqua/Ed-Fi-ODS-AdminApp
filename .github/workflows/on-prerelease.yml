@@ -1,0 +1,195 @@
+# SPDX-License-Identifier: Apache-2.0
+# Licensed to the Ed-Fi Alliance under one or more agreements.
+# The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
+# See the LICENSE and NOTICES files in the project root for more information.
+
+name: On Pre-Release
+on:
+  release:
+    types:
+      - prereleased
+
+env:
+  ADMIN_APP_VERSION: "2.4"
+  ADMIN_API_VERSION: "1.0"
+  GA_MEASUREMENT_ID: ${{ secrets.GOOGLE_ANALYTICS_MEASUREMENT_ID, "default" }}
+  ARTIFACTS_API_KEY: ${{ secrets.AZURE_ARTIFACTS_PERSONAL_ACCESS_TOKEN }}
+  ARTIFACTS_FEED_URL: ${{ secrets.AZURE_ARTIFACTS_FEED_URL }}
+  VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials": [{"endpoint": "${{ secrets.AZURE_ARTIFACTS_FEED_URL }}","password": "${{ secrets.AZURE_ARTIFACTS_PERSONAL_ACCESS_TOKEN }}"}]}'
+  MANIFEST_FILE: "_manifest/spdx_2.2/manifest.spdx.json"
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
+    outputs:
+      api-hash-code: ${{ steps.hashes.outputs.api-hash-code }}
+      db-hash-code: ${{ steps.hashes.outputs.db-hash-code }}
+      web-hash-code: ${{ steps.hashes.outputs.web-hash-code }}
+      release-name: ${{ steps.release.outputs.api-release-name }}
+
+    steps:
+    - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+
+    - name: Determine which product to build
+      id: package-name
+      run: |
+          $release = "${{ github.ref_name }}"
+          $repo = "${{ github.repository }}"
+          $token = "${{ secrets.GITHUB_TOKEN }}"
+
+          # example: "adminapp.web-2541b1294d2704b0964813337f33b291d3f8596b"
+          $packageName = ($release -split ".")[0]
+
+          "set-output name=package-name::($packageName)" | Write-Output
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@9211491ffb35dd6a6657ca4f45d43dfe6e97c829 # v2.0.0
+      with:
+        dotnet-version: 6.0.x
+
+    - name: Publish .NET Assemblies
+      run: |
+        ./build.ps1 -Command BuildAndPublish `
+            -Configuration Release `
+            -Version ${{ env.ADMIN_APP_VERSION }} `
+            -APIVersion ${{ env.ADMIN_API_VERSION }} `
+            -BuildCounter ${{ github.run_number }}
+
+    - name: Populate Google Analytics ID
+      run: .\build.ps1 -Command PopulateGoogleAnalyticsAppSettings -GoogleAnalyticsMeasurementId ${{env.GA_MEASUREMENT_ID}}
+
+    - name: Create NuGet Packages
+      if: success()
+      env:
+        PACKAGE_NAME = ${{ steps.package-name.outputs.package-name }}
+      run: |
+        switch ($env:PACKAGE_NAME) {
+          "adminapp.web" {
+            ./build.ps1 -Command Package -Version ${{ env.ADMIN_APP_VERSION }} `
+                -Configuration Release  -BuildCounter ${{ github.run_number }}
+          }
+          "adminapp.db" {
+            ./build.ps1 -Command PackageDatabase -Version ${{ env.ADMIN_APP_VERSION }} `
+                -Configuration Release -BuildCounter ${{ github.run_number }}
+          }
+          "admin.api" {
+            ./build.ps1 -Command PackageApi -Version ${{ env.ADMIN_API_VERSION }} `
+                -Configuration Release  -BuildCounter ${{ github.run_number }}
+          }
+        }
+
+    - name: Generate hash for NuGet package
+      id: hashes
+      shell: bash
+      run: |
+        echo "::set-output name=hash-code::$(sha256sum *.nupkg | base64 -w0)"
+
+    - name: Upload Packages as Artifacts
+      if: success()
+      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
+      with:
+        name: "${{ steps.package-name.outputs.package-name }} NuGet"
+        path: ./*.nupkg
+        if-no-files-found: error
+        retention-days: 30
+
+  # sbom-create:
+  #   runs-on: ubuntu-latest
+  #   needs: pack
+  #   permissions:
+  #     actions: read
+  #     id-token: write
+  #     contents: write
+  #   outputs:
+  #     api-sbom-hash-code: ${{ steps.sbom-hash.outputs.api-sbom-hash-code }}
+  #   steps:
+  #     - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+
+  #     - name: Get Artifacts
+  #       uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741 #v3.0.0
+  #       with:
+  #         name: NuGetPackages
+
+  #     - name: Generate Software Bill of Materials (SBOM) - API
+  #       shell: pwsh
+  #       run: |
+  #         $url = "https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64"
+  #         $out = "$($env:RUNNER_TEMP)/sbom-tool"
+  #         Invoke-RestMethod -Uri $url -OutFile $out
+  #         chmod +x $out
+
+  #         Get-ChildItem -Include EdFi.Suite3.ODS.Admin.Api.*.nupkg -Recurse | ForEach-Object { $_.FullName } > buildfilelist.txt
+  #         New-Item -Path manifest -Type Directory
+
+  #         &$out generate `
+  #             -b ./ `
+  #             -bl ./buildfilelist.txt `
+  #             -bc ./Application/EdFi.Ods.Admin.Api `
+  #             -pn AdminApi `
+  #             -pv ${{ env.ADMIN_APP_VERSION }} `
+  #             -nsb https://ed-fi.org `
+  #             -m manifest `
+  #             -ps "Ed-Fi Alliance"
+
+  #     - name: Upload SBOM - API
+  #       if: success()
+  #       uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
+  #       with:
+  #         name: API-sbom
+  #         path: ./manifest
+  #         if-no-files-found: error
+  #         retention-days: 30
+
+  #     - name: Generate hashes for SBOM
+  #       id: sbom-hash
+  #       shell: bash
+  #       run: |
+  #         # sha256sum returns "<hashcode>  <name of file". Split that and return only the <hashcode>.
+  #         sbom_hash=$(sha256sum ./manifest/${{ env.MANIFEST_FILE }} | awk '{split($0,a); print a[1]}')
+  #         echo "::set-output name=api-sbom-hash-code::$sbom_hash"
+
+  # sbom-release-API:
+  #   runs-on: ubuntu-latest
+  #   needs: sbom-create
+  #   permissions:
+  #     actions: read
+  #     contents: write
+  #   steps:
+  #     - name: Download the SBOM - API
+  #       uses: slsa-framework/slsa-github-generator/.github/actions/secure-download-artifact@1d646d70aeba1516af69fb0ef48206580122449b
+  #       with:
+  #         name: API-sbom
+  #         path: ${{ env.MANIFEST_FILE }}
+  #         sha256: "${{ needs.sbom-create.outputs.api-sbom-hash-code }}"
+
+  #     - name: Attach to release
+  #       shell: pwsh
+  #       run: |
+  #           $release = "${{ needs.pack.outputs.api-release-name }}"
+  #           $repo = "${{ github.repository }}"
+  #           $token = "${{ secrets.GITHUB_TOKEN }}"
+  #           $file = "${{ env.MANIFEST_FILE }}"
+  #           $uploadName = "API-SBOM-manifest.zip"
+
+  #           $url = "https://api.github.com/repos/$repo/releases/tags/$release"
+
+  #           $gh_headers = @{
+  #               "Accept"        = "application/vnd.github+json"
+  #               "Authorization" = "Bearer $token"
+  #           }
+
+  #           $response = Invoke-RestMethod -Uri $url -Headers $gh_headers
+  #           $releaseId = $response.id
+
+  #           $url = "https://uploads.github.com/repos/$repo/releases/$releaseId/assets"
+
+  #           Compress-Archive $file -DestinationPath $uploadName
+
+  #           $gh_headers["Content-Type"] = "application/octet"
+  #           Invoke-RestMethod -Method POST `
+  #               -Uri "$($url)?name=$($uploadName)" `
+  #               -Headers $gh_headers `
+  #               -InFile $uploadName
