@@ -231,11 +231,11 @@ function RunTests {
     $testAssemblies = Get-ChildItem -Path $testAssemblyPath -Filter "$Filter.dll" -Recurse
 
     if ($testAssemblies.Length -eq 0) {
-        Write-Host "no test assemblies found in $testAssemblyPath"
+        Write-Output "no test assemblies found in $testAssemblyPath"
     }
 
     $testAssemblies | ForEach-Object {
-        Write-Host "Executing: dotnet test $($_)"
+        Write-Output "Executing: dotnet test $($_)"
         Invoke-Execute { dotnet test $_ /logger:"trx;LogFileName=unit-tests.trx"}
     }
 }
@@ -294,11 +294,11 @@ function RunNuGetPack {
 function NewDevCertificate {
     Invoke-Command { dotnet dev-certs https -c }
     if ($lastexitcode) {
-        Write-Host "Generating a new Dev Certificate" -ForegroundColor Magenta
+        Write-Output "Generating a new Dev Certificate" -ForegroundColor Magenta
         Invoke-Execute { dotnet dev-certs https --clean }
         Invoke-Execute { dotnet dev-certs https -t }
     } else {
-        Write-Host "Dev Certificate already exists" -ForegroundColor Magenta
+        Write-Output "Dev Certificate already exists" -ForegroundColor Magenta
     }
 }
 
@@ -362,7 +362,7 @@ function Invoke-Build {
 }
 
 function Invoke-Publish {
-    Write-Host "Building Version $Version" -ForegroundColor Cyan
+    Write-Output "Building Version $Version" -ForegroundColor Cyan
 
     Invoke-Step { SetAdminAppAssemblyInfo }
     Invoke-Step { SetAdminApiAssemblyInfo }
@@ -371,14 +371,14 @@ function Invoke-Publish {
 }
 
 function Invoke-Run {
-    Write-Host "Running Admin App" -ForegroundColor Cyan
+    Write-Output "Running Admin App" -ForegroundColor Cyan
 
     Invoke-Step { NewDevCertificate }
 
     $projectFilePath = "$solutionRoot/EdFi.Ods.AdminApp.Web"
 
     if ([string]::IsNullOrEmpty($LaunchProfile)) {
-        Write-Host "LaunchProfile parameter is required for running Admin App. Please specify the LaunchProfile parameter. Valid values include 'mssql-district', 'mssql-shared', 'mssql-year', 'pg-district', 'pg-shared' and 'pg-year'" -ForegroundColor Red
+        Write-Output "LaunchProfile parameter is required for running Admin App. Please specify the LaunchProfile parameter. Valid values include 'mssql-district', 'mssql-shared', 'mssql-year', 'pg-district', 'pg-shared' and 'pg-year'" -ForegroundColor Red
     } else {
         Invoke-Execute { dotnet run --project $projectFilePath --launch-profile $LaunchProfile }
     }
@@ -396,7 +396,7 @@ function Invoke-IntegrationTests {
     Invoke-Step { InitializeNuGet }
 
     $supportedApiVersions | ForEach-Object {
-        Write-Host "Running Integration Tests for ODS Version" $_.OdsVersion -ForegroundColor Cyan
+        Write-Output "Running Integration Tests for ODS Version" $_.OdsVersion -ForegroundColor Cyan
 
         Invoke-Step {
             $arguments = @{
