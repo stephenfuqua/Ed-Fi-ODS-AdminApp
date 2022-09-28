@@ -26,6 +26,7 @@ jobs:
         shell: pwsh
     outputs:
       hash-code: steps.hashes.outputs.hash-code
+      package-name: steps.package-name.outputs.package-name
 
     steps:
     - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
@@ -38,9 +39,13 @@ jobs:
           $token = "${{ secrets.GITHUB_TOKEN }}"
 
           # example: "adminapp.web-2541b1294d2704b0964813337f33b291d3f8596b"
-          $packageName = ($release -split ".")[0]
+          # output: packageName = "adminapp.web"
+          $packageName = ($release -split "-")[0]
 
           "::set-output name=package-name::$packageName" | Write-Output
+
+    - name: Test output
+      run: write-output "${{ steps.package-name.outputs }}"
 
     - name: Setup .NET
       uses: actions/setup-dotnet@9211491ffb35dd6a6657ca4f45d43dfe6e97c829 # v2.0.0
