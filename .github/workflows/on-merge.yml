@@ -21,7 +21,7 @@ jobs:
     name: Create Pre-Releases
     runs-on: ubuntu-latest
     steps:
-      - name: Create Draft Admin App Web Release
+      - name: Create Admin App Web Pre-Release
         run: |
           curl \
             -X POST \
@@ -30,7 +30,7 @@ jobs:
             ${{ env.API_URL }}/releases \
             -d '{"tag_name":"${{ env.ADMIN_APP_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_APP_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
 
-      - name: Create Draft Admin App Database Release
+      - name: Create Admin App Database Pre-Release
         run: |
           curl \
             -X POST \
@@ -39,7 +39,7 @@ jobs:
             ${{ env.API_URL }}/releases \
             -d '{"tag_name":"${{ env.ADMIN_DB_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_DB_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
 
-      - name: Create Draft Admin API Release
+      - name: Create Admin API Pre-Release
         run: |
           curl \
             -X POST \
