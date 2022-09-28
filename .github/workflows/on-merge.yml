@@ -14,6 +14,7 @@ env:
   ADMIN_DB_VERSION: adminapp.db-${{ github.sha }}
   ADMIN_API_VERSION: admin.api-${{ github.sha }}
   API_URL: https://api.github.com/repos/${{ github.repository }}
+  TOKEN: ${{ secrets.EDFI_BUILD_AGENT_PAT }}
 
 jobs:
   create-pre-releases:
@@ -25,7 +26,7 @@ jobs:
           curl \
             -X POST \
             -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer ${{ env.TOKEN }}" \
             ${{ env.API_URL }}/releases \
             -d '{"tag_name":"${{ env.ADMIN_APP_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_APP_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
 
@@ -34,7 +35,7 @@ jobs:
           curl \
             -X POST \
             -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer ${{ env.TOKEN }}" \
             ${{ env.API_URL }}/releases \
             -d '{"tag_name":"${{ env.ADMIN_DB_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_DB_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
 
@@ -43,6 +44,6 @@ jobs:
           curl \
             -X POST \
             -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer ${{ env.TOKEN }}" \
             ${{ env.API_URL }}/releases \
             -d '{"tag_name":"${{ env.ADMIN_API_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_API_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
