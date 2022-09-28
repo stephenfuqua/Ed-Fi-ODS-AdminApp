@@ -17,18 +17,18 @@
 #>
 
 $p = @{
-        ProductionApiUrl = "http://api"
-        ApiExternalUrl = "https://localhost:5001"
-        AppStartup = "OnPrem"
-        XsdFolder = "/app/Schema"
-        ApiStartupType = "SharedInstance"
-        DatabaseEngine = "PostgreSql"
-        BulkUploadHashCache = "/app/BulkUploadHashCache/"
-        PathBase = "adminapp"
-        EncryptionKey = "<Generated encryption key>"
-        AdminDB = "host=db-admin;port=5432;username=username;password=password;database=EdFi_Admin;Application Name=EdFi.Ods.AdminApp;"
-        SecurityDB = "host=db-admin;port=5432;username=username;password=password;database=EdFi_Security;Application Name=EdFi.Ods.AdminApp;"
-        ProductionOdsDB = "host=db-ods;port=5432;username=username;password=password;database=EdFi_{0};Application Name=EdFi.Ods.AdminApp;"
-    }
+    ProductionApiUrl    = "http://api"
+    ApiExternalUrl      = "https://localhost:5001"
+    AppStartup          = "OnPrem"
+    XsdFolder           = "/app/Schema"
+    ApiStartupType      = "SharedInstance"
+    DatabaseEngine      = "PostgreSql"
+    BulkUploadHashCache = "/app/BulkUploadHashCache/"
+    PathBase            = "adminapp"
+    EncryptionKey       = "<Generated encryption key>"
+    AdminDB             = "host=db-admin;port=5432;username=username;password=password;database=EdFi_Admin;Application Name=EdFi.Ods.AdminApp;"
+    SecurityDB          = "host=db-admin;port=5432;username=username;password=password;database=EdFi_Security;Application Name=EdFi.Ods.AdminApp;"
+    ProductionOdsDB     = "host=db-ods;port=5432;username=username;password=password;database=EdFi_{0};Application Name=EdFi.Ods.AdminApp;"
+}
 
 .\build.ps1 -Version 2.1.1 -Configuration Release -DockerEnvValues $p -Command BuildAndDeployToAdminAppDockerContainer
