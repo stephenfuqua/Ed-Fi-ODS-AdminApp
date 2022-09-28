@@ -203,3 +203,61 @@ jobs:
                 -Uri "$($url)?name=$($uploadName)" `
                 -Headers $gh_headers `
                 -InFile $uploadName
+
+  provenance-create:
+    needs: pack
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: ed-fi-alliance-oss/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
+    with:
+      base64-subjects: ${{ needs.pack.outputs.hash-code }}
+      attestation-name: ${{ needs.pack.outputs.package-name }}.intoto.jsonl
+      upload-assets: true
+
+  provenance-attach:
+    runs-on: ubuntu-latest
+    needs:
+      - provenance-create
+      - pack
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download the Provenance
+        uses: slsa-framework/slsa-github-generator/.github/actions/secure-download-artifact@1d646d70aeba1516af69fb0ef48206580122449b
+        with:
+          name: ${{ needs.pack.outputs.package-name }}.intoto.jsonl
+          path: ${{ needs.pack.outputs.package-name }}.intoto.jsonl
+          sha256: ${{ needs.pack.outputs.hash-code }}
+
+# TODO: look into using softprops/action-gh-release to simplify here
+      - name: Attach to release
+        shell: pwsh
+        run: |
+            $release = "${{ github.ref_name }}"
+            $repo = "${{ github.repository }}"
+            $token = "${{ secrets.GITHUB_TOKEN }}"
+            $file = "${{ needs.pack.outputs.package-name }}.intoto.jsonl"
+            $uploadName = "${{ needs.pack.outputs.package-name }}-provenance.zip"
+
+            $url = "https://api.github.com/repos/$repo/releases/tags/$release"
+
+            $gh_headers = @{
+                "Accept"        = "application/vnd.github+json"
+                "Authorization" = "Bearer $token"
+            }
+
+            $response = Invoke-RestMethod -Uri $url -Headers $gh_headers
+            $releaseId = $response.id
+
+            $url = "https://uploads.github.com/repos/$repo/releases/$releaseId/assets"
+
+            Compress-Archive $file -DestinationPath $uploadName
+
+            $gh_headers["Content-Type"] = "application/octet"
+            Invoke-RestMethod -Method POST `
+                -Uri "$($url)?name=$($uploadName)" `
+                -Headers $gh_headers `
+                -InFile $uploadName
