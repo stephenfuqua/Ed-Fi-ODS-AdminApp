@@ -120,7 +120,7 @@ jobs:
           Invoke-RestMethod -Uri $url -OutFile $out
           chmod +x $out
 
-          Get-ChildItem -Include "EdFi.Suite3.ODS.Admin.$packageName.*.nupkg" -Recurse | ForEach-Object { $_.FullName } > buildfilelist.txt
+          Get-ChildItem -Include "EdFi.Suite3.ODS.$packageName.*.nupkg" -Recurse | ForEach-Object { $_.FullName } > buildfilelist.txt
           New-Item -Path manifest -Type Directory
 
           # Note that the database package does not have a separate .csproject file; it uses the .Web.csproject.
