@@ -209,8 +209,8 @@ jobs:
     permissions:
       actions: read
       id-token: write
-      contents: write
-    uses: ed-fi-alliance-oss/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
+      contents: read
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
     with:
       base64-subjects: ${{ needs.pack.outputs.hash-code }}
       attestation-name: ${{ needs.pack.outputs.package-name }}.intoto.jsonl
