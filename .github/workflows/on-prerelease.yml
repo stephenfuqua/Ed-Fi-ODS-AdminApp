@@ -108,7 +108,7 @@ jobs:
       - name: Get Artifacts
         uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741 #v3.0.0
         with:
-          name: "${{ needs.pack.outputs.package-name }}-NuGet"
+          name: ${{ needs.pack.outputs.package-name }}-NuGet
 
       - name: Generate Software Bill of Materials (SBOM) - API
         shell: pwsh
@@ -159,19 +159,21 @@ jobs:
           sbom_hash=$(sha256sum ./manifest/${{ env.MANIFEST_FILE }} | awk '{split($0,a); print a[1]}')
           echo "::set-output name=sbom-hash-code::$sbom_hash"
 
-  # sbom-release-API:
+  # sbom-attach:
   #   runs-on: ubuntu-latest
-  #   needs: sbom-create
+  #   needs:
+  #     - sbom-create
+  #     - pack
   #   permissions:
   #     actions: read
   #     contents: write
   #   steps:
-  #     - name: Download the SBOM - API
+  #     - name: Download the SBOM
   #       uses: slsa-framework/slsa-github-generator/.github/actions/secure-download-artifact@1d646d70aeba1516af69fb0ef48206580122449b
   #       with:
-  #         name: API-sbom
+  #         name: "${{ needs.pack.outputs.package-name }}-SBOM"
   #         path: ${{ env.MANIFEST_FILE }}
-  #         sha256: "${{ needs.sbom-create.outputs.api-sbom-hash-code }}"
+  #         sha256: "${{ needs.sbom-create.outputs.sbom-hash-code }}"
 
   #     - name: Attach to release
   #       shell: pwsh
