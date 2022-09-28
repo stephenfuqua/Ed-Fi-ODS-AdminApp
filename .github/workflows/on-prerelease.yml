@@ -277,6 +277,8 @@ jobs:
     defaults:
       run:
         shell: pwsh
+    # prevent forks from trying to push NuGet packages
+    if: github.repository == "Ed-Fi-Alliance-OSS/Ed-Fi-ODS-AdminApp"
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
@@ -289,8 +291,6 @@ jobs:
         run: iex "& { $(irm https://aka.ms/install-artifacts-credprovider.ps1) } -AddNetfx"
 
       - name: Push Package to Azure Artifacts
-        # prevent forks from trying to push NuGet packages
-        if: github.repository == "Ed-Fi-Alliance-OSS/Ed-Fi-ODS-AdminApp"
         run: |
           $artifact = (Get-ChildItem -Path $_ -Name -Include *.nupkg)
           $arguments = @{
