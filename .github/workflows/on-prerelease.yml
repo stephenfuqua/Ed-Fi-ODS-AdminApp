@@ -214,7 +214,7 @@ jobs:
       actions: read
       id-token: write
       contents: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
+    uses: Ed-Fi-Alliance-OSS/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
     with:
       base64-subjects: ${{ needs.pack.outputs.hash-code }}
       attestation-name: ${{ needs.pack.outputs.package-name }}.intoto.jsonl
@@ -230,13 +230,13 @@ jobs:
       contents: write
     steps:
       - name: Download the Provenance
-        uses: slsa-framework/slsa-github-generator/.github/actions/secure-download-artifact@1d646d70aeba1516af69fb0ef48206580122449b
+        uses: Ed-Fi-Alliance-OSS/slsa-github-generator/.github/actions/secure-download-artifact@v1.2.0
         with:
           name: ${{ needs.pack.outputs.package-name }}.intoto.jsonl
           path: ${{ needs.pack.outputs.package-name }}.intoto.jsonl
           sha256: ${{ needs.pack.outputs.hash-code }}
 
-      - name: Attach to release
+      - name: Attach to Release
         shell: pwsh
         run: |
           $release = "${{ github.ref_name }}"
