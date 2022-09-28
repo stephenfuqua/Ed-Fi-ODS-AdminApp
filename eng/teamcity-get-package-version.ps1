@@ -6,15 +6,15 @@
 # This script helps TeamCity lookup the package version from an artifact that
 # was copied over from an upstream dependency.
 
-Param(    
-       [string] 
-       $packageType = "Application"     
+Param(
+    [string]
+    $packageType = "Application"
 )
 
-function SetPackageDetails{
+function SetPackageDetails {
     param (
         [string]
-        $packageNamePrefix       
+        $packageNamePrefix
     )
 
     # There should only be one file here - the NuGet package from the upstream build artifacts
@@ -32,23 +32,20 @@ function SetPackageDetails{
         throw "$packageNamePrefix package name does not match the expected naming convention."
     }
 
-    $release = $matches[1]+"."+$matches[2]+"."+$matches[3]
+    $release = $matches[1] + "." + $matches[2] + "." + $matches[3]
 
     Write-Host "##teamcity[setParameter name='nuGet.packageFile' value='$pkg']"
     Write-Host "##teamcity[setParameter name='nuGet.packageVersion' value='$release']"
 
-    if("Web" -ieq $packageNamePrefix)
-    { 
+    if ("Web" -ieq $packageNamePrefix) {
         Write-Host "##teamcity[setParameter name='octopus.release' value='$release']"
         Write-Host "##teamcity[setParameter name='octopus.package' value='$pkg']"
     }
 }
 
-if("Application" -ieq $packageType)
-{ 
-    SetPackageDetails "Web"   
+if ("Application" -ieq $packageType) {
+    SetPackageDetails "Web"
 }
-else 
-{    
-    SetPackageDetails "Database"   
+else {
+    SetPackageDetails "Database"
 }
