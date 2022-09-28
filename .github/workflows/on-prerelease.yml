@@ -60,10 +60,9 @@ jobs:
 
     - name: Create NuGet Packages
       if: success()
-      env:
-        PACKAGE_NAME: ${{ steps.package-name.outputs.package-name }}
       run: |
-        switch ("$env:PACKAGE_NAME") {
+        "-----> ${{ steps.package-name.outputs.package-name }}" | Write-Output
+        switch ("${{ steps.package-name.outputs.package-name }}") {
           "adminapp.web" {
             ./build.ps1 -Command Package -Version ${{ env.ADMIN_APP_VERSION }} `
                 -Configuration Release  -BuildCounter ${{ github.run_number }}
