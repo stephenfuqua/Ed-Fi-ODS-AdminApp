@@ -88,7 +88,7 @@ jobs:
       if: success()
       uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
       with:
-        name: "${{ steps.package-name.outputs.package-name }} NuGet"
+        name: "${{ steps.package-name.outputs.package-name }}-NuGet"
         path: ./*.nupkg
         if-no-files-found: error
         retention-days: 30
@@ -108,7 +108,7 @@ jobs:
       - name: Get Artifacts
         uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741 #v3.0.0
         with:
-          name: NuGetPackages
+          name: "${{ needs.pack.outputs.package-name }}-NuGet"
 
       - name: Generate Software Bill of Materials (SBOM) - API
         shell: pwsh
