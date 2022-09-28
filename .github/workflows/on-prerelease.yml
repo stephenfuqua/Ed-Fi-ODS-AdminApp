@@ -29,11 +29,11 @@ jobs:
       package-name: ${{ steps.package-name.outputs.package-name }}
 
     steps:
-    - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
-    - name: Determine which product to build
-      id: package-name
-      run: |
+      - name: Determine which product to build
+        id: package-name
+        run: |
           $release = "${{ github.ref_name }}"
           $repo = "${{ github.repository }}"
           $token = "${{ secrets.GITHUB_TOKEN }}"
@@ -44,55 +44,55 @@ jobs:
 
           "::set-output name=package-name::$packageName" | Write-Output
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@9211491ffb35dd6a6657ca4f45d43dfe6e97c829 # v2.0.0
-      with:
-        dotnet-version: 6.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@9211491ffb35dd6a6657ca4f45d43dfe6e97c829 # v2.0.0
+        with:
+          dotnet-version: 6.0.x
 
-    - name: Publish .NET Assemblies
-      run: |
-        ./build.ps1 -Command BuildAndPublish `
-            -Configuration Release `
-            -Version ${{ env.ADMIN_APP_VERSION }} `
-            -APIVersion ${{ env.ADMIN_API_VERSION }} `
-            -BuildCounter ${{ github.run_number }}
+      - name: Publish .NET Assemblies
+        run: |
+          ./build.ps1 -Command BuildAndPublish `
+              -Configuration Release `
+              -Version ${{ env.ADMIN_APP_VERSION }} `
+              -APIVersion ${{ env.ADMIN_API_VERSION }} `
+              -BuildCounter ${{ github.run_number }}
 
-    - name: Populate Google Analytics ID
-      run: .\build.ps1 -Command PopulateGoogleAnalyticsAppSettings -GoogleAnalyticsMeasurementId ${{env.GA_MEASUREMENT_ID}}
+      - name: Populate Google Analytics ID
+        run: .\build.ps1 -Command PopulateGoogleAnalyticsAppSettings -GoogleAnalyticsMeasurementId ${{env.GA_MEASUREMENT_ID}}
 
-    - name: Create NuGet Packages
-      if: success()
-      run: |
-        "Building ${{ steps.package-name.outputs.package-name }} NuGet Package" | Write-Output
-        switch ("${{ steps.package-name.outputs.package-name }}") {
-          "AdminApp.Web" {
-            ./build.ps1 -Command Package -Version ${{ env.ADMIN_APP_VERSION }} `
-                -Configuration Release  -BuildCounter ${{ github.run_number }}
+      - name: Create NuGet Packages
+        if: success()
+        run: |
+          "Building ${{ steps.package-name.outputs.package-name }} NuGet Package" | Write-Output
+          switch ("${{ steps.package-name.outputs.package-name }}") {
+            "AdminApp.Web" {
+              ./build.ps1 -Command Package -Version ${{ env.ADMIN_APP_VERSION }} `
+                  -Configuration Release  -BuildCounter ${{ github.run_number }}
+            }
+            "AdminApp.Database" {
+              ./build.ps1 -Command PackageDatabase -Version ${{ env.ADMIN_APP_VERSION }} `
+                  -Configuration Release -BuildCounter ${{ github.run_number }}
+            }
+            "Admin.Api" {
+              ./build.ps1 -Command PackageApi -Version ${{ env.ADMIN_API_VERSION }} `
+                  -Configuration Release  -BuildCounter ${{ github.run_number }}
+            }
           }
-          "AdminApp.Database" {
-            ./build.ps1 -Command PackageDatabase -Version ${{ env.ADMIN_APP_VERSION }} `
-                -Configuration Release -BuildCounter ${{ github.run_number }}
-          }
-          "Admin.Api" {
-            ./build.ps1 -Command PackageApi -Version ${{ env.ADMIN_API_VERSION }} `
-                -Configuration Release  -BuildCounter ${{ github.run_number }}
-          }
-        }
 
-    - name: Generate hash for NuGet package
-      id: hash-code
-      shell: bash
-      run: |
-        echo "::set-output name=hash-code::$(sha256sum *.nupkg | base64 -w0)"
+      - name: Generate hash for NuGet package
+        id: hash-code
+        shell: bash
+        run: |
+          echo "::set-output name=hash-code::$(sha256sum *.nupkg | base64 -w0)"
 
-    - name: Upload Packages as Artifacts
-      if: success()
-      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
-      with:
-        name: "${{ steps.package-name.outputs.package-name }}-NuGet"
-        path: ./*.nupkg
-        if-no-files-found: error
-        retention-days: 30
+      - name: Upload Packages as Artifacts
+        if: success()
+        uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
+        with:
+          name: "${{ steps.package-name.outputs.package-name }}-NuGet"
+          path: ./*.nupkg
+          if-no-files-found: error
+          retention-days: 30
 
   sbom-create:
     runs-on: ubuntu-latest
@@ -239,36 +239,35 @@ jobs:
           path: ${{ needs.pack.outputs.package-name }}.intoto.jsonl
           sha256: ${{ needs.pack.outputs.hash-code }}
 
-# TODO: look into using softprops/action-gh-release to simplify here
+      # TODO: look into using softprops/action-gh-release to simplify here
       - name: Attach to release
         shell: pwsh
         run: |
-            $release = "${{ github.ref_name }}"
-            $repo = "${{ github.repository }}"
-            $token = "${{ secrets.GITHUB_TOKEN }}"
-            $file = "${{ needs.pack.outputs.package-name }}.intoto.jsonl"
-            $uploadName = "${{ needs.pack.outputs.package-name }}-provenance.zip"
+          $release = "${{ github.ref_name }}"
+          $repo = "${{ github.repository }}"
+          $token = "${{ secrets.GITHUB_TOKEN }}"
+          $file = "${{ needs.pack.outputs.package-name }}.intoto.jsonl"
+          $uploadName = "${{ needs.pack.outputs.package-name }}-provenance.zip"
 
-            $url = "https://api.github.com/repos/$repo/releases/tags/$release"
+          $url = "https://api.github.com/repos/$repo/releases/tags/$release"
 
-            $gh_headers = @{
-                "Accept"        = "application/vnd.github+json"
-                "Authorization" = "Bearer $token"
-            }
+          $gh_headers = @{
+              "Accept"        = "application/vnd.github+json"
+              "Authorization" = "Bearer $token"
+          }
 
-            $response = Invoke-RestMethod -Uri $url -Headers $gh_headers
-            $releaseId = $response.id
+          $response = Invoke-RestMethod -Uri $url -Headers $gh_headers
+          $releaseId = $response.id
 
-            $url = "https://uploads.github.com/repos/$repo/releases/$releaseId/assets"
+          $url = "https://uploads.github.com/repos/$repo/releases/$releaseId/assets"
 
-            Compress-Archive $file -DestinationPath $uploadName
+          Compress-Archive $file -DestinationPath $uploadName
 
-            $gh_headers["Content-Type"] = "application/octet"
-            Invoke-RestMethod -Method POST `
-                -Uri "$($url)?name=$($uploadName)" `
-                -Headers $gh_headers `
-                -InFile $uploadName
-
+          $gh_headers["Content-Type"] = "application/octet"
+          Invoke-RestMethod -Method POST `
+              -Uri "$($url)?name=$($uploadName)" `
+              -Headers $gh_headers `
+              -InFile $uploadName
 
   publish-package:
     name: Publish NuGet Package
@@ -278,7 +277,7 @@ jobs:
       run:
         shell: pwsh
     # prevent forks from trying to push NuGet packages
-    if: github.repository == "Ed-Fi-Alliance-OSS/Ed-Fi-ODS-AdminApp"
+    if: github.repository == 'Ed-Fi-Alliance-OSS/Ed-Fi-ODS-AdminApp'
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
