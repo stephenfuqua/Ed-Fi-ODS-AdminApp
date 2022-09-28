@@ -3,6 +3,10 @@
 # The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 # See the LICENSE and NOTICES files in the project root for more information.
 
+# We might want to look into ShouldProcess to see if it _IS_ in fact relevant
+# to Ed-Fi build and/or install scripts. For now, disabling warnings.
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification='Rule is irrelevant in this context')]
+
 [CmdLetBinding()]
 <#
     .SYNOPSIS
@@ -66,6 +70,7 @@
 
         .\build.ps1 -Version "2.1" -Configuration Release -DockerEnvValues $p -Command BuildAndDeployToAdminAppDockerContainer
 #>
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'unused', Justification = 'False positive')]
 param(
     # Command to execute, defaults to "Build".
     [string]
@@ -245,8 +250,8 @@ function UnitTests {
 }
 
 function ResetTestDatabases {
-    param (
-        [string]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'unused', Justification = 'False positive')]
+    param ( [string]
         $OdsPackageName,
 
         [string]
@@ -388,11 +393,11 @@ function Invoke-Clean {
     Invoke-Step { Clean }
 }
 
-function Invoke-UnitTests {
+function Invoke-UnitTestSuite {
     Invoke-Step { UnitTests }
 }
 
-function Invoke-IntegrationTests {
+function Invoke-IntegrationTestSuite {
     Invoke-Step { InitializeNuGet }
 
     $supportedApiVersions | ForEach-Object {
@@ -520,12 +525,12 @@ Invoke-Main {
             Invoke-Publish
         }
         Run { Invoke-Run }
-        UnitTest { Invoke-UnitTests }
-        IntegrationTest { Invoke-IntegrationTests }
+        UnitTest { Invoke-UnitTestSuite }
+        IntegrationTest { Invoke-IntegrationTestSuite }
         BuildAndTest {
             Invoke-Build
-            Invoke-UnitTests
-            Invoke-IntegrationTests
+            Invoke-UnitTestSuite
+            Invoke-IntegrationTestSuite
         }
         Package { Invoke-BuildPackage }
         PackageApi { Invoke-BuildApiPackage }
