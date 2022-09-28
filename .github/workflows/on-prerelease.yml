@@ -178,39 +178,34 @@ jobs:
           path: ${{ env.MANIFEST_FILE }}
           sha256: "${{ needs.sbom-create.outputs.sbom-hash-code }}"
 
-      - name: Upload assets
-        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # v0.1.14
-        with:
-          files: ${{ needs.pack.outputs.package-name }}-SBOM.zip
+      - name: Attach to release
+        shell: pwsh
+        run: |
+            $release = "${{ github.ref_name }}"
+            $repo = "${{ github.repository }}"
+            $token = "${{ secrets.GITHUB_TOKEN }}"
+            $file = "${{ env.MANIFEST_FILE }}"
+            $uploadName = "${{ needs.pack.outputs.package-name }}-SBOM.zip"
 
-      # - name: Attach to release
-      #   shell: pwsh
-      #   run: |
-      #       $release = "${{ github.ref_name }}"
-      #       $repo = "${{ github.repository }}"
-      #       $token = "${{ secrets.GITHUB_TOKEN }}"
-      #       $file = "${{ env.MANIFEST_FILE }}"
-      #       $uploadName = "${{ needs.pack.outputs.package-name }}-SBOM.zip"
+            $url = "https://api.github.com/repos/$repo/releases/tags/$release"
 
-      #       $url = "https://api.github.com/repos/$repo/releases/tags/$release"
+            $gh_headers = @{
+                "Accept"        = "application/vnd.github+json"
+                "Authorization" = "Bearer $token"
+            }
 
-      #       $gh_headers = @{
-      #           "Accept"        = "application/vnd.github+json"
-      #           "Authorization" = "Bearer $token"
-      #       }
+            $response = Invoke-RestMethod -Uri $url -Headers $gh_headers
+            $releaseId = $response.id
 
-      #       $response = Invoke-RestMethod -Uri $url -Headers $gh_headers
-      #       $releaseId = $response.id
+            $url = "https://uploads.github.com/repos/$repo/releases/$releaseId/assets"
 
-      #       $url = "https://uploads.github.com/repos/$repo/releases/$releaseId/assets"
+            Compress-Archive $file -DestinationPath $uploadName
 
-      #       Compress-Archive $file -DestinationPath $uploadName
-
-      #       $gh_headers["Content-Type"] = "application/octet"
-      #       Invoke-RestMethod -Method POST `
-      #           -Uri "$($url)?name=$($uploadName)" `
-      #           -Headers $gh_headers `
-      #           -InFile $uploadName
+            $gh_headers["Content-Type"] = "application/octet"
+            Invoke-RestMethod -Method POST `
+                -Uri "$($url)?name=$($uploadName)" `
+                -Headers $gh_headers `
+                -InFile $uploadName
 
   provenance-create:
     name: Create Provenance
@@ -241,7 +236,6 @@ jobs:
           path: ${{ needs.pack.outputs.package-name }}.intoto.jsonl
           sha256: ${{ needs.pack.outputs.hash-code }}
 
-      # TODO: look into using softprops/action-gh-release to simplify here
       - name: Attach to release
         shell: pwsh
         run: |
@@ -278,8 +272,6 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    # prevent forks from trying to push NuGet packages
-    if: github.repository == 'Ed-Fi-Alliance-OSS/Ed-Fi-ODS-AdminApp'
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
@@ -292,6 +284,8 @@ jobs:
         run: iex "& { $(irm https://aka.ms/install-artifacts-credprovider.ps1) } -AddNetfx"
 
       - name: Push Package to Azure Artifacts
+        # prevent forks from trying to push NuGet packages
+        if: github.repository == 'Ed-Fi-Alliance-OSS/Ed-Fi-ODS-AdminApp'
         run: |
           $artifact = (Get-ChildItem -Path $_ -Name -Include *.nupkg)
           $arguments = @{
