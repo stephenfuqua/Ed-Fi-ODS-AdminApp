@@ -1,7 +1,11 @@
-# SPDX-License-Identifier: Apache-2.0
+﻿# SPDX-License-Identifier: Apache-2.0
 # Licensed to the Ed-Fi Alliance under one or more agreements.
 # The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 # See the LICENSE and NOTICES files in the project root for more information.
+
+# We might want to look into ShouldProcess to see if it _IS_ in fact relevant
+# to Ed-Fi build and/or install scripts. For now, disabling warnings.
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification='Rule is irrelevant in this context')]
 
 [CmdLetBinding()]
 <#
@@ -66,6 +70,7 @@
 
         .\build.ps1 -Version "2.1" -Configuration Release -DockerEnvValues $p -Command BuildAndDeployToAdminAppDockerContainer
 #>
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'unused', Justification = 'False positive')]
 param(
     # Command to execute, defaults to "Build".
     [string]
@@ -231,11 +236,11 @@ function RunTests {
     $testAssemblies = Get-ChildItem -Path $testAssemblyPath -Filter "$Filter.dll" -Recurse
 
     if ($testAssemblies.Length -eq 0) {
-        Write-Host "no test assemblies found in $testAssemblyPath"
+        Write-Output "no test assemblies found in $testAssemblyPath"
     }
 
     $testAssemblies | ForEach-Object {
-        Write-Host "Executing: dotnet test $($_)"
+        Write-Output "Executing: dotnet test $($_)"
         Invoke-Execute { dotnet test $_ /logger:"trx;LogFileName=unit-tests.trx"}
     }
 }
@@ -245,8 +250,8 @@ function UnitTests {
 }
 
 function ResetTestDatabases {
-    param (
-        [string]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'unused', Justification = 'False positive')]
+    param ( [string]
         $OdsPackageName,
 
         [string]
@@ -294,11 +299,11 @@ function RunNuGetPack {
 function NewDevCertificate {
     Invoke-Command { dotnet dev-certs https -c }
     if ($lastexitcode) {
-        Write-Host "Generating a new Dev Certificate" -ForegroundColor Magenta
+        Write-Output "Generating a new Dev Certificate" -ForegroundColor Magenta
         Invoke-Execute { dotnet dev-certs https --clean }
         Invoke-Execute { dotnet dev-certs https -t }
     } else {
-        Write-Host "Dev Certificate already exists" -ForegroundColor Magenta
+        Write-Output "Dev Certificate already exists" -ForegroundColor Magenta
     }
 }
 
@@ -362,7 +367,7 @@ function Invoke-Build {
 }
 
 function Invoke-Publish {
-    Write-Host "Building Version $Version" -ForegroundColor Cyan
+    Write-Output "Building Version $Version" -ForegroundColor Cyan
 
     Invoke-Step { SetAdminAppAssemblyInfo }
     Invoke-Step { SetAdminApiAssemblyInfo }
@@ -371,14 +376,14 @@ function Invoke-Publish {
 }
 
 function Invoke-Run {
-    Write-Host "Running Admin App" -ForegroundColor Cyan
+    Write-Output "Running Admin App" -ForegroundColor Cyan
 
     Invoke-Step { NewDevCertificate }
 
     $projectFilePath = "$solutionRoot/EdFi.Ods.AdminApp.Web"
 
     if ([string]::IsNullOrEmpty($LaunchProfile)) {
-        Write-Host "LaunchProfile parameter is required for running Admin App. Please specify the LaunchProfile parameter. Valid values include 'mssql-district', 'mssql-shared', 'mssql-year', 'pg-district', 'pg-shared' and 'pg-year'" -ForegroundColor Red
+        Write-Output "LaunchProfile parameter is required for running Admin App. Please specify the LaunchProfile parameter. Valid values include 'mssql-district', 'mssql-shared', 'mssql-year', 'pg-district', 'pg-shared' and 'pg-year'" -ForegroundColor Red
     } else {
         Invoke-Execute { dotnet run --project $projectFilePath --launch-profile $LaunchProfile }
     }
@@ -388,15 +393,15 @@ function Invoke-Clean {
     Invoke-Step { Clean }
 }
 
-function Invoke-UnitTests {
+function Invoke-UnitTestSuite {
     Invoke-Step { UnitTests }
 }
 
-function Invoke-IntegrationTests {
+function Invoke-IntegrationTestSuite {
     Invoke-Step { InitializeNuGet }
 
     $supportedApiVersions | ForEach-Object {
-        Write-Host "Running Integration Tests for ODS Version" $_.OdsVersion -ForegroundColor Cyan
+        Write-Output "Running Integration Tests for ODS Version" $_.OdsVersion -ForegroundColor Cyan
 
         Invoke-Step {
             $arguments = @{
@@ -520,12 +525,12 @@ Invoke-Main {
             Invoke-Publish
         }
         Run { Invoke-Run }
-        UnitTest { Invoke-UnitTests }
-        IntegrationTest { Invoke-IntegrationTests }
+        UnitTest { Invoke-UnitTestSuite }
+        IntegrationTest { Invoke-IntegrationTestSuite }
         BuildAndTest {
             Invoke-Build
-            Invoke-UnitTests
-            Invoke-IntegrationTests
+            Invoke-UnitTestSuite
+            Invoke-IntegrationTestSuite
         }
         Package { Invoke-BuildPackage }
         PackageApi { Invoke-BuildApiPackage }
