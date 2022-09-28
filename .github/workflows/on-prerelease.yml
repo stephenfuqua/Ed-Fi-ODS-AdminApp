@@ -25,7 +25,7 @@ jobs:
       run:
         shell: pwsh
     outputs:
-      hash-code: steps.hashes.outputs.hash-code
+      hash-code: steps.hash-code.outputs.hash-code
       package-name: steps.package-name.outputs.package-name
 
     steps:
@@ -43,9 +43,6 @@ jobs:
           $packageName = ($release -split "-")[0]
 
           "::set-output name=package-name::$packageName" | Write-Output
-
-    - name: Test output
-      run: write-output "${{ steps.package-name.outputs }}"
 
     - name: Setup .NET
       uses: actions/setup-dotnet@9211491ffb35dd6a6657ca4f45d43dfe6e97c829 # v2.0.0
@@ -66,24 +63,23 @@ jobs:
     - name: Create NuGet Packages
       if: success()
       run: |
-        "-----> ${{ steps.package-name.outputs.package-name }}" | Write-Output
         switch ("${{ steps.package-name.outputs.package-name }}") {
-          "adminapp.web" {
+          "AdminApp.Web" {
             ./build.ps1 -Command Package -Version ${{ env.ADMIN_APP_VERSION }} `
                 -Configuration Release  -BuildCounter ${{ github.run_number }}
           }
-          "adminapp.db" {
+          "AdminApp.Database" {
             ./build.ps1 -Command PackageDatabase -Version ${{ env.ADMIN_APP_VERSION }} `
                 -Configuration Release -BuildCounter ${{ github.run_number }}
           }
-          "admin.api" {
+          "Admin.Api" {
             ./build.ps1 -Command PackageApi -Version ${{ env.ADMIN_API_VERSION }} `
                 -Configuration Release  -BuildCounter ${{ github.run_number }}
           }
         }
 
     - name: Generate hash for NuGet package
-      id: hashes
+      id: hash-code
       shell: bash
       run: |
         echo "::set-output name=hash-code::$(sha256sum *.nupkg | base64 -w0)"
@@ -97,60 +93,71 @@ jobs:
         if-no-files-found: error
         retention-days: 30
 
-  # sbom-create:
-  #   runs-on: ubuntu-latest
-  #   needs: pack
-  #   permissions:
-  #     actions: read
-  #     id-token: write
-  #     contents: write
-  #   outputs:
-  #     api-sbom-hash-code: ${{ steps.sbom-hash.outputs.api-sbom-hash-code }}
-  #   steps:
-  #     - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+  sbom-create:
+    runs-on: ubuntu-latest
+    needs: pack
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    outputs:
+      sbom-hash-code: ${{ steps.sbom-hash.outputs.sbom-hash-code }}
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
-  #     - name: Get Artifacts
-  #       uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741 #v3.0.0
-  #       with:
-  #         name: NuGetPackages
+      - name: Get Artifacts
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741 #v3.0.0
+        with:
+          name: NuGetPackages
 
-  #     - name: Generate Software Bill of Materials (SBOM) - API
-  #       shell: pwsh
-  #       run: |
-  #         $url = "https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64"
-  #         $out = "$($env:RUNNER_TEMP)/sbom-tool"
-  #         Invoke-RestMethod -Uri $url -OutFile $out
-  #         chmod +x $out
+      - name: Generate Software Bill of Materials (SBOM) - API
+        shell: pwsh
+        run: |
+          $packageName = "${{ needs.pack.outputs.package-name }}"
 
-  #         Get-ChildItem -Include EdFi.Suite3.ODS.Admin.Api.*.nupkg -Recurse | ForEach-Object { $_.FullName } > buildfilelist.txt
-  #         New-Item -Path manifest -Type Directory
+          $url = "https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64"
+          $out = "$($env:RUNNER_TEMP)/sbom-tool"
+          Invoke-RestMethod -Uri $url -OutFile $out
+          chmod +x $out
 
-  #         &$out generate `
-  #             -b ./ `
-  #             -bl ./buildfilelist.txt `
-  #             -bc ./Application/EdFi.Ods.Admin.Api `
-  #             -pn AdminApi `
-  #             -pv ${{ env.ADMIN_APP_VERSION }} `
-  #             -nsb https://ed-fi.org `
-  #             -m manifest `
-  #             -ps "Ed-Fi Alliance"
+          Get-ChildItem -Include "EdFi.Suite3.ODS.Admin.$packageName.*.nupkg" -Recurse | ForEach-Object { $_.FullName } > buildfilelist.txt
+          New-Item -Path manifest -Type Directory
 
-  #     - name: Upload SBOM - API
-  #       if: success()
-  #       uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
-  #       with:
-  #         name: API-sbom
-  #         path: ./manifest
-  #         if-no-files-found: error
-  #         retention-days: 30
+          # Note that the database package does not have a separate .csproject file; it uses the .Web.csproject.
+          $csproj = "EdFi.Ods.AdminApp.Web"
+          $version = "${{ env.ADMIN_APP_VERSION }}"
 
-  #     - name: Generate hashes for SBOM
-  #       id: sbom-hash
-  #       shell: bash
-  #       run: |
-  #         # sha256sum returns "<hashcode>  <name of file". Split that and return only the <hashcode>.
-  #         sbom_hash=$(sha256sum ./manifest/${{ env.MANIFEST_FILE }} | awk '{split($0,a); print a[1]}')
-  #         echo "::set-output name=api-sbom-hash-code::$sbom_hash"
+          if ($packageName -eq "Admin.Api") {
+            $csproj = "EdFi.Ods.Admin.Api"
+            $version = "${{ env.ADMIN_API_VERSION }}"
+          }
+
+          &$out generate `
+              -b ./ `
+              -bl ./buildfilelist.txt `
+              -bc ./Application/$csproj `
+              -pn "EdFi.Suite3.ODS.$packageName" `
+              -pv $version `
+              -nsb https://ed-fi.org `
+              -m manifest `
+              -ps "Ed-Fi Alliance"
+
+      - name: Upload SBOM
+        if: success()
+        uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
+        with:
+          name: "${{ needs.pack.outputs.package-name }}-SBOM"
+          path: ./manifest
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Generate hash code for SBOM
+        id: sbom-hash
+        shell: bash
+        run: |
+          # sha256sum returns "<hashcode>  <name of file". Split that and return only the <hashcode>.
+          sbom_hash=$(sha256sum ./manifest/${{ env.MANIFEST_FILE }} | awk '{split($0,a); print a[1]}')
+          echo "::set-output name=sbom-hash-code::$sbom_hash"
 
   # sbom-release-API:
   #   runs-on: ubuntu-latest
