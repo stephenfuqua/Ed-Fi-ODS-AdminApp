@@ -98,17 +98,19 @@ jobs:
     needs: pack
     permissions:
       actions: read
-      id-token: write
       contents: write
     outputs:
       sbom-hash-code: ${{ steps.sbom-hash.outputs.sbom-hash-code }}
+    env:
+      NUGET_ARTIFACT: ${{ needs.pack.outputs.package-name }}-NuGet
+      SBOM_ARTIFACT: ${{ needs.pack.outputs.package-name }}-SBOM
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
 
       - name: Get Artifacts
         uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741 #v3.0.0
         with:
-          name: ${{ needs.pack.outputs.package-name }}-NuGet
+          name: ${{ env.NUGET_ARTIFACT }}
 
       - name: Generate Software Bill of Materials (SBOM) - API
         shell: pwsh
@@ -146,7 +148,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v3.0.0
         with:
-          name: "${{ needs.pack.outputs.package-name }}-SBOM"
+          name: ${{ env.SBOM_ARTIFACT }}
           path: ./manifest
           if-no-files-found: error
           retention-days: 30
