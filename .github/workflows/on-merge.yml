@@ -12,7 +12,7 @@ on:
 env:
   ADMIN_APP_VERSION: AdminApp.Web-${{ github.sha }}
   ADMIN_DB_VERSION: AdminApp.Database-${{ github.sha }}
-  ADMIN_API_VERSION: AdminApp.Api-${{ github.sha }}
+  ADMIN_API_VERSION: Admin.Api-${{ github.sha }}
   API_URL: https://api.github.com/repos/${{ github.repository }}
   TOKEN: ${{ secrets.EDFI_BUILD_AGENT_PAT }}
 
