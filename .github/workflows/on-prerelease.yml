@@ -40,7 +40,7 @@ jobs:
           # example: "adminapp.web-2541b1294d2704b0964813337f33b291d3f8596b"
           $packageName = ($release -split ".")[0]
 
-          "set-output name=package-name::($packageName)" | Write-Output
+          "::set-output name=package-name::$packageName" | Write-Output
 
     - name: Setup .NET
       uses: actions/setup-dotnet@9211491ffb35dd6a6657ca4f45d43dfe6e97c829 # v2.0.0
