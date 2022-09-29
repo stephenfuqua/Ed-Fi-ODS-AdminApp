@@ -9,8 +9,7 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace EdFi.Ods.Admin.Api.Features;
 
 [SwaggerSchema(Title = "AdminApiError", Description = "Wrapper schema for all error responses")]
-public class AdminApiError
-{
+public class AdminApiError {
     protected AdminApiError(int status, string title)
     {
         Status = status;
