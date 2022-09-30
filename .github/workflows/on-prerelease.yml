@@ -219,6 +219,7 @@ jobs:
       base64-subjects: ${{ needs.pack.outputs.hash-code }}
       attestation-name: ${{ needs.pack.outputs.package-name }}.intoto.jsonl
       upload-assets: true
+      compile-generator: true
 
   provenance-attach:
     runs-on: ubuntu-latest
