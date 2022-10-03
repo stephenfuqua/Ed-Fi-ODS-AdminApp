@@ -11,7 +11,6 @@ on:
 
 env:
   ADMIN_APP_VERSION: AdminApp.Web-${{ github.sha }}
-  ADMIN_DB_VERSION: AdminApp.Database-${{ github.sha }}
   ADMIN_API_VERSION: Admin.Api-${{ github.sha }}
   API_URL: https://api.github.com/repos/${{ github.repository }}
   TOKEN: ${{ secrets.EDFI_BUILD_AGENT_PAT }}
@@ -21,35 +20,41 @@ jobs:
     name: Create Pre-Releases
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout the Repo
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+
       - name: Set Version Numbers
+        id: versions
         shell: pwsh
         run: |
           # Install the MinVer CLI tool
           &dotnet tool install --global minver-cli
 
-      - name: Create Admin App Web Pre-Release
-        run: |
-          curl \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ env.TOKEN }}" \
-            ${{ env.API_URL }}/releases \
-            -d '{"tag_name":"${{ env.ADMIN_APP_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_APP_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
+          Push-Location Application/EdFi.Ods.AdminApp.Web
+          "::set-output name=admin-app::$(minver -t AdminApp.Web-v)" | Write-Output
+          Pop-Location
 
-      - name: Create Admin App Database Pre-Release
+          Push-Location Application/EdFi.Ods.Admin.Api
+          "::set-output name=admin-api::$(minver -t Admin.Api-v)" | Write-Output
+
+      - name: Create Admin App Web Pre-Release
+        env:
+          VERSION: AdminApp-v${{ steps.versions.outputs.admin-app }}
         run: |
           curl \
             -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ env.TOKEN }}" \
             ${{ env.API_URL }}/releases \
-            -d '{"tag_name":"${{ env.ADMIN_DB_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_DB_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
+            -d '{"tag_name":"${{ env.VERSION }}","target_commitish":"main","name":"${{ env.VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
 
       - name: Create Admin API Pre-Release
+        env:
+          VERSION: AdminApi-v${{ steps.versions.outputs.admin-api }}
         run: |
           curl \
             -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ env.TOKEN }}" \
             ${{ env.API_URL }}/releases \
-            -d '{"tag_name":"${{ env.ADMIN_API_VERSION }}","target_commitish":"main","name":"${{ env.ADMIN_API_VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
+            -d '{"tag_name":"${{ env.VERSION }}","target_commitish":"main","name":"${{ env.VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'

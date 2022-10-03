@@ -28,9 +28,25 @@ jobs:
     outputs:
       hash-code: ${{ steps.hash-code.outputs.hash-code }}
       package-name: ${{ steps.package-name.outputs.package-name }}
+      admin-app-version: ${{ steps.versions.outputs.admin-app }}
+      admin-api-version: ${{ steps.versoins.outputs.admin-api }}
 
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+
+      - name: Set Version Numbers
+        id: versions
+        shell: pwsh
+        run: |
+          # Install the MinVer CLI tool
+          &dotnet tool install --global minver-cli
+
+          Push-Location Application/EdFi.Ods.AdminApp.Web
+          "::set-output name=admin-app::$(minver -t AdminApp-v)" | Write-Output
+          Pop-Location
+
+          Push-Location Application/EdFi.Ods.Admin.Api
+          "::set-output name=admin-api::$(minver -t AdminApi-v)" | Write-Output
 
       - name: Determine which product to build
         id: package-name
@@ -51,6 +67,9 @@ jobs:
           dotnet-version: 6.0.x
 
       - name: Publish .NET Assemblies
+        env:
+          ADMIN_APP_VERSION: AdminApp-v${{ steps.versions.outputs.admin-app }}
+          ADMIN_API_VERSION: AdminApi-v${{ steps.versions.outputs.admin-api }}
         run: |
           ./build.ps1 -Command BuildAndPublish `
               -Configuration Release `
@@ -65,19 +84,20 @@ jobs:
         if: success()
         run: |
           "Building ${{ steps.package-name.outputs.package-name }} NuGet Package" | Write-Output
-          switch ("${{ steps.package-name.outputs.package-name }}") {
-            "AdminApp.Web" {
-              ./build.ps1 -Command Package -Version ${{ env.ADMIN_APP_VERSION }} `
-                  -Configuration Release  -BuildCounter ${{ github.run_number }}
-            }
-            "AdminApp.Database" {
-              ./build.ps1 -Command PackageDatabase -Version ${{ env.ADMIN_APP_VERSION }} `
-                  -Configuration Release -BuildCounter ${{ github.run_number }}
-            }
-            "Admin.Api" {
-              ./build.ps1 -Command PackageApi -Version ${{ env.ADMIN_API_VERSION }} `
-                  -Configuration Release  -BuildCounter ${{ github.run_number }}
-            }
+          if ("${{ steps.package-name.outputs.package-name }}" -eq "AdminApp") {
+            # Web, DB, and Installer
+            ./build.ps1 -Command Package -Version ${{ env.ADMIN_APP_VERSION }} `
+                -Configuration Release  -BuildCounter ${{ github.run_number }}
+
+            ./build.ps1 -Command PackageDatabase -Version ${{ env.ADMIN_APP_VERSION }} `
+                -Configuration Release -BuildCounter ${{ github.run_number }}
+
+            # TODO: add installer
+          }
+          else {
+            # Admin API
+            ./build.ps1 -Command PackageApi -Version ${{ env.ADMIN_API_VERSION }} `
+                -Configuration Release  -BuildCounter ${{ github.run_number }}
           }
 
       - name: Generate hash for NuGet package
@@ -125,19 +145,15 @@ jobs:
           Get-ChildItem -Include "EdFi.Suite3.ODS.$packageName.*.nupkg" -Recurse | ForEach-Object { $_.FullName } > buildfilelist.txt
           New-Item -Path manifest -Type Directory
 
-          # Note that the database package does not have a separate .csproject file; it uses the .Web.csproject.
-          $csproj = "EdFi.Ods.AdminApp.Web"
-          $version = "${{ env.ADMIN_APP_VERSION }}"
-
+          $version = "${{ needs.pack.outputs.admin-app-version }}"
           if ($packageName -eq "Admin.Api") {
-            $csproj = "EdFi.Ods.Admin.Api"
-            $version = "${{ env.ADMIN_API_VERSION }}"
+            $version = "${{ needs.pack.outputs.admin-api-version }}"
           }
 
           &$out generate `
               -b ./ `
               -bl ./buildfilelist.txt `
-              -bc ./Application/$csproj `
+              -bc ""./Application/EdFi.Ods.$packageName" `
               -pn "EdFi.Suite3.ODS.$packageName" `
               -pv $version `
               -nsb https://ed-fi.org `
