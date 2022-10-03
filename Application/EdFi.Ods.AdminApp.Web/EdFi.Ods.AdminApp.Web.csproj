@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <IsPackable>true</IsPackable>
-    <MinVerTagPrefix>AdminApp-v</MinVerTagPrefix>
+    <MinVerTagPrefix>AdminApp.Web-v</MinVerTagPrefix>
   </PropertyGroup>
 
   <ItemGroup>
