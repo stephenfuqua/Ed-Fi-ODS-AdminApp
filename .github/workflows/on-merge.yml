@@ -21,6 +21,12 @@ jobs:
     name: Create Pre-Releases
     runs-on: ubuntu-latest
     steps:
+      - name: Set Version Numbers
+        shell: pwsh
+        run: |
+          # Install the MinVer CLI tool
+          &dotnet tool install --global minver-cli
+
       - name: Create Admin App Web Pre-Release
         run: |
           curl \
