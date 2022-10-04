@@ -38,21 +38,57 @@ jobs:
       - name: Create Admin App Web Pre-Release
         env:
           VERSION: AdminApp-v${{ steps.versions.outputs.admin-app }}
+        shell: pwsh
         run: |
-          curl \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ env.TOKEN }}" \
-            ${{ env.API_URL }}/releases \
-            -d '{"tag_name":"${{ env.VERSION }}","target_commitish":"main","name":"${{ env.VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
+          # curl \
+          #   -X POST \
+          #   -H "Accept: application/vnd.github+json" \
+          #   -H "Authorization: Bearer ${{ env.TOKEN }}" \
+          #   ${{ env.API_URL }}/releases \
+          #   -d '{"tag_name":"${{ env.VERSION }}","target_commitish":"main","name":"${{ env.VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
+          $body = @{
+            tag_name = "${{ env.VERSION }}"
+            target_commitish = "main"
+            name = "${{ env.VERSION }}"
+            body = ""
+            draft = $false
+            prerelease = $true
+            generate_release_notes = $false
+          } | ConvertTo-Json
+
+          $headers = @{
+            Accept = "application/vnd.github+json",
+            Authorization = "Bearer ${{ env.TOKEN }}"
+          }
+
+          Invoke-RestMethod -Method POST -Uri ${{ env.API_URL }}/releases -Body $body -Headers $headers
 
       - name: Create Admin API Pre-Release
         env:
           VERSION: AdminApi-v${{ steps.versions.outputs.admin-api }}
+        shell: pwsh
         run: |
-          curl \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ env.TOKEN }}" \
-            ${{ env.API_URL }}/releases \
-            -d '{"tag_name":"${{ env.VERSION }}","target_commitish":"main","name":"${{ env.VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
+          # curl \
+          #   -X POST \
+          #   -H "Accept: application/vnd.github+json" \
+          #   -H "Authorization: Bearer ${{ env.TOKEN }}" \
+          #   ${{ env.API_URL }}/releases \
+          #   -d '{"tag_name":"${{ env.VERSION }}","target_commitish":"main","name":"${{ env.VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
+          $body = @{
+            tag_name = "${{ env.VERSION }}"
+            target_commitish = "main"
+            name = "${{ env.VERSION }}"
+            body = ""
+            draft = $false
+            prerelease = $true
+            generate_release_notes = $false
+          } | ConvertTo-Json
+
+          $headers = @{
+            Accept = "application/vnd.github+json",
+            Authorization = "Bearer ${{ env.TOKEN }}"
+          }
+
+          Invoke-RestMethod -Method POST -Uri ${{ env.API_URL }}/releases -Body $body -Headers $headers
+
+
