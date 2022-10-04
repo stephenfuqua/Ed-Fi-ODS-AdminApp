@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServices();
 
-// logging
+
 ILog _logger = LogManager.GetLogger("Program");
 _logger.Info("Starting Admin API");
 
