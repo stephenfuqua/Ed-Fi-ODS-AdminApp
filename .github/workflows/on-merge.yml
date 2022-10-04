@@ -40,12 +40,6 @@ jobs:
           VERSION: AdminApp-v${{ steps.versions.outputs.admin-app }}
         shell: pwsh
         run: |
-          # curl \
-          #   -X POST \
-          #   -H "Accept: application/vnd.github+json" \
-          #   -H "Authorization: Bearer ${{ env.TOKEN }}" \
-          #   ${{ env.API_URL }}/releases \
-          #   -d '{"tag_name":"${{ env.VERSION }}","target_commitish":"main","name":"${{ env.VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
           $body = @{
             tag_name = "${{ env.VERSION }}"
             target_commitish = "main"
@@ -68,12 +62,6 @@ jobs:
           VERSION: AdminApi-v${{ steps.versions.outputs.admin-api }}
         shell: pwsh
         run: |
-          # curl \
-          #   -X POST \
-          #   -H "Accept: application/vnd.github+json" \
-          #   -H "Authorization: Bearer ${{ env.TOKEN }}" \
-          #   ${{ env.API_URL }}/releases \
-          #   -d '{"tag_name":"${{ env.VERSION }}","target_commitish":"main","name":"${{ env.VERSION }}","body":"","draft":false,"prerelease":true,"generate_release_notes":false}'
           $body = @{
             tag_name = "${{ env.VERSION }}"
             target_commitish = "main"
