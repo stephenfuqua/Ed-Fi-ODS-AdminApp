@@ -385,6 +385,7 @@ namespace EdFi.Ods.AdminApp.Web
         }
 
         public static AppSettings ConfigurationAppSettings { get; set; }
+
         public static ConnectionStrings ConfigurationConnectionStrings { get; set; }
     }
 }
