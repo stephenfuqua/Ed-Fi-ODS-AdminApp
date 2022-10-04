@@ -81,22 +81,27 @@ jobs:
       - name: Create NuGet Packages
         if: success()
         run: |
+          $appVersion = "${{ env.ADMIN_APP_VERSION }}" -Replace "AdminApp.Web-v"
+          $apiVersion = "${{ env.ADMIN_API_VERSION }}" -Replace "Admin.Api-v"
+
           "Building ${{ steps.package-name.outputs.package-name }} NuGet Package" | Write-Output
           if ("${{ steps.package-name.outputs.package-name }}" -eq "AdminApp") {
             # Web, DB, and Installer
-            ./build.ps1 -Command Package -Version ${{ env.ADMIN_APP_VERSION }} `
+            ./build.ps1 -Command Package -Version $appVersion `
                 -Configuration Release  -BuildCounter ${{ github.run_number }}
 
-            ./build.ps1 -Command PackageDatabase -Version ${{ env.ADMIN_APP_VERSION }} `
+            ./build.ps1 -Command PackageDatabase -Version $appVersion `
                 -Configuration Release -BuildCounter ${{ github.run_number }}
 
             # TODO: add installer
           }
           else {
             # Admin API
-            ./build.ps1 -Command PackageApi -Version ${{ env.ADMIN_API_VERSION }} `
+            ./build.ps1 -Command PackageApi -Version  $apiVersion `
                 -Configuration Release  -BuildCounter ${{ github.run_number }}
           }
+# TODO: look at generated DLLs and see how build counter is used when using minver
+# can run that locally.
 
       - name: Generate hash for NuGet package
         id: hash-code
