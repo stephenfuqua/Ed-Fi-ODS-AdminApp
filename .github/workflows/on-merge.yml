@@ -57,7 +57,7 @@ jobs:
           } | ConvertTo-Json
 
           $headers = @{
-            Accept = "application/vnd.github+json",
+            Accept = "application/vnd.github+json"
             Authorization = "Bearer ${{ env.TOKEN }}"
           }
 
@@ -85,7 +85,7 @@ jobs:
           } | ConvertTo-Json
 
           $headers = @{
-            Accept = "application/vnd.github+json",
+            Accept = "application/vnd.github+json"
             Authorization = "Bearer ${{ env.TOKEN }}"
           }
 
