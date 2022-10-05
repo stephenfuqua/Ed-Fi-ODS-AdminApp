@@ -50,8 +50,8 @@ jobs:
           "::set-output name=admin-api::$apiVersion" | Write-Output
 
           # SemVer
-          "::set-output name=admin-app-semver::$($appVersion -Replace $webPrefix) | Write-Output
-          "::set-output name=admin-api-semver::$($apiVersion -Replace $apiPRefix) | Write-Output
+          "::set-output name=admin-app-semver::$($appVersion -Replace $webPrefix)" | Write-Output
+          "::set-output name=admin-api-semver::$($apiVersion -Replace $apiPRefix)" | Write-Output
 
       - name: Determine which product to build
         id: package-name
@@ -60,8 +60,8 @@ jobs:
           $repo = "${{ github.repository }}"
           $token = "${{ secrets.GITHUB_TOKEN }}"
 
-          # example: "adminapp.web-2541b1294d2704b0964813337f33b291d3f8596b"
-          # output: packageName = "adminapp.web"
+          # example: "AdminApp.Web-v2.4.49-alpha.0.140"
+          # output: packageName = "AdminApp.Web"
           $packageName = ($release -split "-")[0]
 
           "::set-output name=package-name::$packageName" | Write-Output
