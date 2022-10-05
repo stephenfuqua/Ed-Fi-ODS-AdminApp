@@ -27,7 +27,7 @@ jobs:
       hash-code: ${{ steps.hash-code.outputs.hash-code }}
       package-name: ${{ steps.package-name.outputs.package-name }}
       admin-app-version: ${{ steps.versions.outputs.admin-app }}
-      admin-api-version: ${{ steps.versoins.outputs.admin-api }}
+      admin-api-version: ${{ steps.versions.outputs.admin-api }}
 
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
@@ -36,15 +36,27 @@ jobs:
         id: versions
         shell: pwsh
         run: |
+          $webPrefix = "AdminApp.Web-v"
+          $apiPRefix = "Admin.Api-v"
+
           # Install the MinVer CLI tool
           &dotnet tool install --global minver-cli
 
           Push-Location Application/EdFi.Ods.AdminApp.Web
-          "::set-output name=admin-app::$(minver -t AdminApp.Web-v)" | Write-Output
+          $appVersion = $(minver -t $webPrefix)"
           Pop-Location
 
           Push-Location Application/EdFi.Ods.Admin.Api
-          "::set-output name=admin-api::$(minver -t Admin.Api-v)" | Write-Output
+          $apiVersion = $(minver -t $apiPRefix)"
+          Pop-Location
+
+          # Full release name
+          "::set-output name=admin-app::$appVersion" | Write-Output
+          "::set-output name=admin-api::$apiVersion" | Write-Output
+
+          # SemVer
+          "::set-output name=admin-app-semver::$($appVersion -Replace $webPrefix) | Write-Output
+          "::set-output name=admin-api-semver::$($apiVersion -Replace $apiPRefix) | Write-Output
 
       - name: Determine which product to build
         id: package-name
@@ -65,14 +77,14 @@ jobs:
           dotnet-version: 6.0.x
 
       - name: Publish .NET Assemblies
-        env:
-          ADMIN_APP_VERSION: AdminApp-v${{ steps.versions.outputs.admin-app }}
-          ADMIN_API_VERSION: AdminApi-v${{ steps.versions.outputs.admin-api }}
         run: |
+          $appVersion = "${{ steps.versions.outputs.admin-app-semver }}"
+          $apiVersion = "${{ steps.versions.outputs.admin-api-semver }}"
+
           ./build.ps1 -Command BuildAndPublish `
               -Configuration Release `
-              -Version ${{ env.ADMIN_APP_VERSION }} `
-              -APIVersion ${{ env.ADMIN_API_VERSION }} `
+              -Version $appVersion `
+              -APIVersion $apiVersion `
               -BuildCounter ${{ github.run_number }}
 
       - name: Populate Google Analytics ID
@@ -81,8 +93,8 @@ jobs:
       - name: Create NuGet Packages
         if: success()
         run: |
-          $appVersion = "${{ env.ADMIN_APP_VERSION }}" -Replace "AdminApp.Web-v"
-          $apiVersion = "${{ env.ADMIN_API_VERSION }}" -Replace "Admin.Api-v"
+          $appVersion = "${{ steps.versions.outputs.admin-app-semver }}"
+          $apiVersion = "${{ steps.versions.outputs.admin-api-semver }}"
 
           "Building ${{ steps.package-name.outputs.package-name }} NuGet Package" | Write-Output
           if ("${{ steps.package-name.outputs.package-name }}" -eq "AdminApp") {
