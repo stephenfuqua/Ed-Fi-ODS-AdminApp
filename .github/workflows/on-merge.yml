@@ -9,10 +9,9 @@ on:
     branches:
       - main
     tags:
-      - AdminApp.Web-v**
-      - Admin.Api-v**
-    tags-ignore:
-      - **-alpha.**
+      - 'AdminApp.Web-v**'
+      - 'Admin.Api-v**'
+      - '!**-alpha.**'
 
 env:
   API_URL: https://api.github.com/repos/${{ github.repository }}
