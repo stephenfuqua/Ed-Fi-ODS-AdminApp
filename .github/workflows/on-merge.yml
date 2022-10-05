@@ -22,9 +22,10 @@ jobs:
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
         with:
           # MinVer needs to have more than just the current commit, so tell
-          # GitHub to get many more. Does not need _all_ though, so hoping
-          # that 200 will be enough.
-          fetch-depth: 200
+          # GitHub to get many more. Setting to 0 forces retrieval of _all_
+          # commits. Which might be excessive, but we don't know how many
+          # there will be between different major.minor releases.
+          fetch-depth: 0
 
       - name: Set Version Numbers
         id: versions
