@@ -42,13 +42,8 @@ jobs:
           # Install the MinVer CLI tool
           &dotnet tool install --global minver-cli
 
-          Push-Location Application/EdFi.Ods.AdminApp.Web
-          $appVersion = $(minver -t $webPrefix)"
-          Pop-Location
-
-          Push-Location Application/EdFi.Ods.Admin.Api
-          $apiVersion = $(minver -t $apiPRefix)"
-          Pop-Location
+          $appVersion = $(minver -t $webPrefix)
+          $apiVersion = $(minver -t $apiPRefix)
 
           # Full release name
           "::set-output name=admin-app::$appVersion" | Write-Output

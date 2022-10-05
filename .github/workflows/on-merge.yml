@@ -34,22 +34,18 @@ jobs:
           # Install the MinVer CLI tool
           &dotnet tool install --global minver-cli
 
-          Push-Location Application/EdFi.Ods.AdminApp.Web
           "::set-output name=admin-app::$(minver -t AdminApp.Web-v)" | Write-Output
-          Pop-Location
-
-          Push-Location Application/EdFi.Ods.Admin.Api
           "::set-output name=admin-api::$(minver -t Admin.Api-v)" | Write-Output
 
       - name: Create Admin App Web Pre-Release
-        env:
-          VERSION: AdminApp.Web-v${{ steps.versions.outputs.admin-app }}
         shell: pwsh
         run: |
+          $version = "${{ steps.versions.outputs.admin-app }}"
+
           $body = @{
-            tag_name = "${{ env.VERSION }}"
+            tag_name = $version
             target_commitish = "main"
-            name = "${{ env.VERSION }}"
+            name = $version
             body = ""
             draft = $false
             prerelease = $true
@@ -64,14 +60,14 @@ jobs:
           Invoke-RestMethod -Method POST -Uri ${{ env.API_URL }}/releases -Body $body -Headers $headers
 
       - name: Create Admin API Pre-Release
-        env:
-          VERSION: Admin.Api-v${{ steps.versions.outputs.admin-api }}
         shell: pwsh
         run: |
+          $version = "${{ steps.versions.outputs.admin-api }}"
+
           $body = @{
-            tag_name = "${{ env.VERSION }}"
+            tag_name = $version
             target_commitish = "main"
-            name = "${{ env.VERSION }}"
+            name = $version
             body = ""
             draft = $false
             prerelease = $true
