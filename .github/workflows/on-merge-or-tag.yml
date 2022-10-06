@@ -3,7 +3,7 @@
 # The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 # See the LICENSE and NOTICES files in the project root for more information.
 
-name: On Merge to Main or Create Release
+name: On Merge to Main or Releasable Tag
 on:
   push:
     branches:
@@ -35,11 +35,14 @@ jobs:
         id: versions
         shell: pwsh
         run: |
+          $webPrefix = "AdminApp.Web-v"
+          $apiPRefix = "Admin.Api-v"
+
           # Install the MinVer CLI tool
           &dotnet tool install --global minver-cli
 
-          "::set-output name=admin-app::$(minver -t AdminApp.Web-v)" | Write-Output
-          "::set-output name=admin-api::$(minver -t Admin.Api-v)" | Write-Output
+          "::set-output name=admin-app::$($webPrefix)$(minver -t $webPrefix)" | Write-Output
+          "::set-output name=admin-api::$($apiPRefix)$(minver -t $apiPRefix)" | Write-Output
 
       - name: Create Admin App Web Pre-Release
         shell: pwsh
